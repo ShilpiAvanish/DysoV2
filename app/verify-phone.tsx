@@ -36,8 +36,8 @@ export default function VerifyPhoneScreen() {
     if (otpString.length === 6) {
       // Handle verification logic here
       console.log('Verifying OTP:', otpString);
-      // Navigate to next screen or main app
-      router.push('/(tabs)');
+      // Navigate to permissions screen
+      router.push('/permissions');
     }
   };
 
