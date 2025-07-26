@@ -99,13 +99,13 @@ export default function HomeScreen() {
             onPress={() => setSelectedFilter(filter)}
           >
             <View style={styles.filterContent}>
-              {filter === 'Distance' && <IconSymbol size={16} name="location" color={selectedFilter === filter ? "#fff" : "#888"} />}
-              {filter === 'Trending' && <IconSymbol size={16} name="chart.line.uptrend.xyaxis" color={selectedFilter === filter ? "#fff" : "#888"} />}
-              {filter === 'Tonight' && <IconSymbol size={16} name="moon" color={selectedFilter === filter ? "#fff" : "#888"} />}
+              <IconSymbol size={16} name="location" color={selectedFilter === filter ? "#6750a4" : "#888"} />
+              {filter === 'Trending' && <IconSymbol size={16} name="chart.line.uptrend.xyaxis" color={selectedFilter === filter ? "#6750a4" : "#888"} />}
+              {filter === 'Tonight' && <IconSymbol size={16} name="moon" color={selectedFilter === filter ? "#6750a4" : "#888"} />}
               <ThemedText
                 style={[
                   styles.filterText,
-                  { color: selectedFilter === filter ? "#fff" : "#888" }
+                  { color: selectedFilter === filter ? "#6750a4" : "#888" }
                 ]}
               >
                 {filter}
@@ -130,7 +130,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#f7f5ff',
   },
   header: {
     flexDirection: 'row',
@@ -149,21 +149,32 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   filtersContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
   },
   filterButton: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#fff',
     borderRadius: 20,
     marginRight: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   filterButtonSelected: {
-    backgroundColor: '#444',
+    backgroundColor: '#e8def8',
+    borderColor: '#6750a4',
   },
   filterContent: {
     flexDirection: 'row',
@@ -179,16 +190,25 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   eventCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
     marginBottom: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   eventImage: {
-    height: 180,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   eventImageText: {
     color: '#fff',
@@ -202,16 +222,18 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
+    color: '#1a1a1a',
+    marginBottom: 6,
   },
   eventDetails: {
     fontSize: 14,
-    color: '#aaa',
+    color: '#6750a4',
     marginBottom: 4,
+    fontWeight: '400',
   },
   eventAttendance: {
     fontSize: 12,
-    color: '#888',
+    color: '#6750a4',
+    fontWeight: '400',
   },
 });
