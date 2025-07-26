@@ -1,0 +1,179 @@
+🔑 1. Onboarding Flow
+A. Phone Verification
+Enter Phone: User inputs their phone number to receive a 6-digit code.
+
+Option to Skip.
+
+Button: Send Code
+
+Verify Code: User inputs the 6-digit verification code.
+
+Button: Verify
+
+B. Permissions
+User is asked to allow:
+
+Contacts (to find friends)
+
+Notifications (for event updates)
+
+Location (to find nearby events)
+
+Button: Continue
+
+C. Profile Setup
+Upload or take a photo
+
+Enter:
+
+Username
+
+Full Name
+
+Instagram Handle (optional)
+
+Bio
+
+Gender (Male / Female / Other)
+
+Birthday (Must be 18+)
+
+Campus (searchable dropdown)
+
+Button: Complete
+
+👤 2. User Profile
+Displays:
+
+Profile picture
+
+Name & handle
+
+University
+
+Short bio
+
+Tab Sections:
+
+Attending
+
+Saved
+
+Hosting
+
+Hosted
+
+Button: Edit Profile
+
+📅 3. Event Creation Flow
+A. Add Flyer
+Upload a custom image or use a default flyer
+
+Suggested size: 1080×1920px
+
+B. Event Info
+Event Date
+
+Location
+
+Description
+
+C. Access Settings
+Choose how guests join:
+
+RSVP (free) or Tickets (paid)
+
+Toggle options:
+
+Require approval
+
+Allow +1 guests
+
+D. Privacy Settings
+Choose visibility:
+
+Public
+
+UT Austin Only
+
+E. Ticket Management (if "Tickets" selected)
+Add ticket types (Custom, Presale, Door, Table)
+
+Fields:
+
+Ticket Name
+
+Price
+
+Quantity
+
+Capacity
+
+Open/Close Date
+
+Require Approval (toggle)
+
+Preview Ticket
+
+🔍 4. Event Discovery Feed
+Browse upcoming events by filters:
+
+Distance, Trending, Tonight, etc.
+
+Each event card shows:
+
+Event flyer
+
+Title, Date, Location
+
+Attendance count
+
+🗓️ 5. Event Details Page
+Large flyer image
+
+Hosted by info
+
+Tags: Party, College, Nightlife
+
+Details:
+
+Address (with map)
+
+Date & Time
+
+Price (Free or Ticketed)
+
+Attendee list (avatars)
+
+Description
+
+RSVP Button: Going / RSVP
+
+✅ 6. Event Check-In & Host Dashboard
+A. Host Dashboard
+Lists hosted events
+
+For each: flyer, name, date & location
+
+Button: Start Check-In
+
+B. Check-In Screen
+Map or visual layout of event
+
+Options:
+
+Scan guest pass (QR)
+
+Camera access
+
+🧭 Navigation Bar (Bottom)
+Home: Events feed
+
+Search: Explore events
+
+Create (+): Start event creation
+
+Friends: Social/discovery
+
+Profile: View/Edit user profile
+
