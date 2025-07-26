@@ -9,9 +9,9 @@ export default function PhoneVerificationScreen() {
 
   const handleSendCode = () => {
     if (phoneNumber.trim()) {
-      // Navigate to verification code screen or handle phone verification
+      // Navigate to verification code screen
       console.log('Sending code to:', phoneNumber);
-      // router.push('/verification-code');
+      router.push('/verify-phone');
     }
   };
 
