@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -134,6 +133,19 @@ export default function ExploreScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+      </View>
+
+      {/* Filter Buttons */}
+      <View style={styles.filterContainer}>
+        <TouchableOpacity style={[styles.filterButton, styles.activeFilter, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+          <ThemedText style={[styles.filterText, { color: '#fff' }]}>Distance</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.filterButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border, borderWidth: 1 }]}>
+          <ThemedText style={[styles.filterText, { color: Colors[colorScheme ?? 'light'].text }]}>Trending</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.filterButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border, borderWidth: 1 }]}>
+          <ThemedText style={[styles.filterText, { color: Colors[colorScheme ?? 'light'].text }]}>Tonight</ThemedText>
+        </TouchableOpacity>
       </View>
 
       {/* Events List */}
@@ -288,5 +300,33 @@ const styles = StyleSheet.create({
   attendees: {
     fontSize: 12,
     opacity: 0.6,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  filterButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    minWidth: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeFilter: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  filterText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
