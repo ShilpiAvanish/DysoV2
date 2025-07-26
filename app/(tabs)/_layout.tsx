@@ -42,7 +42,7 @@ export default function TabLayout() {
         options={{
           title: 'Tickets',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol size={24} name={focused ? 'ticket.fill' : 'ticket'} color={color} />
+            <IconSymbol size={24} name={focused ? 'creditcard.fill' : 'creditcard'} color={color} />
           ),
         }}
       />
