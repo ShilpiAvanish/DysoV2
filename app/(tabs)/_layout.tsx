@@ -1,4 +1,3 @@
-
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
@@ -15,8 +14,12 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarStyle: {
+          backgroundColor: Colors[colorScheme ?? 'light'].background,
+          borderTopColor: Colors[colorScheme ?? 'light'].border,
+        },
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({

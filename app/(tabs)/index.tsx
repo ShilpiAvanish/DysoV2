@@ -130,7 +130,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -149,14 +148,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
   },
   filtersContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
   },
   filterButton: {
-    backgroundColor: '#2a2a2a',
     borderRadius: 20,
     marginRight: 12,
     paddingHorizontal: 16,
@@ -179,10 +176,19 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   eventCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
+    marginHorizontal: 20,
     marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: '#fff',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   eventImage: {
     height: 180,
@@ -202,16 +208,13 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 4,
   },
   eventDetails: {
     fontSize: 14,
-    color: '#aaa',
     marginBottom: 4,
   },
   eventAttendance: {
     fontSize: 12,
-    color: '#888',
   },
 });
