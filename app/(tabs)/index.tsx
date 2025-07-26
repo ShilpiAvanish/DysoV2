@@ -75,7 +75,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: '#000' }]}>
+    <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerIcon}>
