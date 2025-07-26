@@ -1,17 +1,77 @@
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Linking, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 
 export default function PhoneVerificationScreen() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendCode = () => {
-    if (phoneNumber.trim()) {
+  const formatPhoneNumber = (phone: string) => {
+    // Remove all non-numeric characters
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Add +1 if it's a US number (10 digits) and doesn't start with +
+    if (cleaned.length === 10) {
+      return `+1${cleaned}`;
+    }
+    
+    // If it starts with 1 and is 11 digits, add +
+    if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      return `+${cleaned}`;
+    }
+    
+    // If it already starts with +, return as is
+    if (phone.startsWith('+')) {
+      return phone;
+    }
+    
+    // Otherwise, return with + prefix
+    return `+${cleaned}`;
+  };
+
+  const handleSendCode = async () => {
+    if (!phoneNumber.trim()) {
+      Alert.alert('Error', 'Please enter a phone number');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const formattedPhone = formatPhoneNumber(phoneNumber);
+      console.log('Sending code to:', formattedPhone);
+      
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
+
+      if (error) {
+        console.error('Error sending OTP:', error);
+        if (error.message.includes('Invalid phone number')) {
+          Alert.alert('Invalid Phone Number', 'Please enter a valid phone number with country code.');
+        } else if (error.message.includes('rate limit')) {
+          Alert.alert('Too Many Attempts', 'Please wait before requesting another code.');
+        } else {
+          Alert.alert('Error', error.message || 'Failed to send verification code');
+        }
+        return;
+      }
+
+      // Store the formatted phone number for verification screen
       // Navigate to verification code screen
-      console.log('Sending code to:', phoneNumber);
-      router.push('/verify-phone');
+      router.push({
+        pathname: '/verify-phone',
+        params: { phoneNumber: formattedPhone }
+      });
+      
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,12 +134,14 @@ export default function PhoneVerificationScreen() {
         <TouchableOpacity 
           style={[
             styles.sendButton,
-            { opacity: phoneNumber.trim() ? 1 : 0.6 }
+            { opacity: (phoneNumber.trim() && !isLoading) ? 1 : 0.6 }
           ]} 
           onPress={handleSendCode}
-          disabled={!phoneNumber.trim()}
+          disabled={!phoneNumber.trim() || isLoading}
         >
-          <Text style={styles.sendButtonText}>Send Code →</Text>
+          <Text style={styles.sendButtonText}>
+            {isLoading ? 'Sending...' : 'Send Code →'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

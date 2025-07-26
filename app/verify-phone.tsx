@@ -1,12 +1,16 @@
 
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { supabase } from '@/lib/supabase';
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
+  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const handleOtpChange = (value: string, index: number) => {
@@ -21,7 +25,8 @@ export default function VerifyPhoneScreen() {
 
     // Auto-submit when all 6 digits are entered
     if (newOtp.every(digit => digit !== '') && index === 5) {
-      // Handle verification logic here
+      const otpString = newOtp.join('');
+      handleVerify(otpString);
     }
   };
 
@@ -31,22 +36,100 @@ export default function VerifyPhoneScreen() {
     }
   };
 
-  const handleVerify = () => {
-    const otpString = otp.join('');
-    if (otpString.length === 6) {
-      // Handle verification logic here
+  const handleVerify = async (otpCode?: string) => {
+    const otpString = otpCode || otp.join('');
+    
+    if (otpString.length !== 6) {
+      Alert.alert('Error', 'Please enter the complete 6-digit code');
+      return;
+    }
+
+    if (!phoneNumber) {
+      Alert.alert('Error', 'Phone number not found. Please go back and try again.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
       console.log('Verifying OTP:', otpString);
-      // Navigate to permissions screen
-      router.push('/permissions');
+      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.verifyOtp({
+        phone: phoneNumber,
+        token: otpString,
+        type: 'sms',
+      });
+
+      if (error) {
+        console.error('Error verifying OTP:', error);
+        if (error.message.includes('Invalid token')) {
+          Alert.alert('Invalid Code', 'The verification code is incorrect. Please try again.');
+        } else if (error.message.includes('expired')) {
+          Alert.alert('Code Expired', 'The verification code has expired. Please request a new one.');
+        } else {
+          Alert.alert('Verification Failed', error.message || 'Failed to verify code');
+        }
+        
+        // Clear OTP on error
+        setOtp(['', '', '', '', '', '']);
+        inputRefs.current[0]?.focus();
+        return;
+      }
+
+      if (session) {
+        // Verification successful
+        console.log('Verification successful', session);
+        router.push('/permissions');
+      }
+      
+    } catch (error) {
+      console.error('Unexpected error during verification:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleResend = () => {
-    // Handle resend logic here
-    console.log('Resending code');
-    // Reset OTP
-    setOtp(['', '', '', '', '', '']);
-    inputRefs.current[0]?.focus();
+  const handleResend = async () => {
+    if (!phoneNumber) {
+      Alert.alert('Error', 'Phone number not found. Please go back and try again.');
+      return;
+    }
+
+    setIsResending(true);
+    
+    try {
+      console.log('Resending code to:', phoneNumber);
+      
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: phoneNumber,
+      });
+
+      if (error) {
+        console.error('Error resending OTP:', error);
+        if (error.message.includes('rate limit')) {
+          Alert.alert('Too Many Attempts', 'Please wait before requesting another code.');
+        } else {
+          Alert.alert('Error', error.message || 'Failed to resend verification code');
+        }
+        return;
+      }
+
+      Alert.alert('Code Sent', 'A new verification code has been sent to your phone.');
+      
+      // Reset OTP
+      setOtp(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
+      
+    } catch (error) {
+      console.error('Unexpected error during resend:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const isComplete = otp.every(digit => digit !== '');
@@ -66,7 +149,7 @@ export default function VerifyPhoneScreen() {
         <View style={styles.headerSection}>
           <Text style={styles.title}>Verify Phone</Text>
           <Text style={styles.subtitle}>
-            Enter the 6-digit code we just sent to your phone.
+            Enter the 6-digit code we just sent to {phoneNumber || 'your phone'}.
           </Text>
         </View>
 
@@ -95,8 +178,11 @@ export default function VerifyPhoneScreen() {
         <View style={styles.resendSection}>
           <Text style={styles.resendText}>
             Didn't get a code?{' '}
-            <Text style={styles.resendLink} onPress={handleResend}>
-              Resend
+            <Text 
+              style={[styles.resendLink, { opacity: isResending ? 0.6 : 1 }]} 
+              onPress={isResending ? undefined : handleResend}
+            >
+              {isResending ? 'Sending...' : 'Resend'}
             </Text>
           </Text>
         </View>
@@ -107,12 +193,14 @@ export default function VerifyPhoneScreen() {
         <TouchableOpacity 
           style={[
             styles.verifyButton,
-            { opacity: isComplete ? 1 : 0.6 }
+            { opacity: (isComplete && !isLoading) ? 1 : 0.6 }
           ]} 
-          onPress={handleVerify}
-          disabled={!isComplete}
+          onPress={() => handleVerify()}
+          disabled={!isComplete || isLoading}
         >
-          <Text style={styles.verifyButtonText}>Verify →</Text>
+          <Text style={styles.verifyButtonText}>
+            {isLoading ? 'Verifying...' : 'Verify →'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
