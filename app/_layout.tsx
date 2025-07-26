@@ -20,8 +20,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="phone-verification" options={{ headerShown: false }} />
         <Stack.Screen name="verify-phone" options={{ headerShown: false }} />
+        <Stack.Screen name="permissions" options={{ headerShown: false }} />
+        <Stack.Screen name="setup-profile" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
