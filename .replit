@@ -5,11 +5,11 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [[ports]]
-localPort = 8081
+localPort = 8082
 externalPort = 80
 
 [[ports]]
-localPort = 8082
+localPort = 8081
 externalPort = 3000
 
 [workflows]
@@ -21,7 +21,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN npx expo start --web"
+args = "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN npx expo start --web --port 8082 --dev-client"
 
 [[workflows.workflow]]
 name = "EAS Init"
