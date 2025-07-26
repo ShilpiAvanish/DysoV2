@@ -1,49 +1,52 @@
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  StyleSheet,
+} from 'react-native';
+import { router } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function PermissionsScreen() {
-  const router = useRouter();
-
   const handleAllowNotifications = () => {
-    // Handle notification permission request
+    // Request notification permissions
     console.log('Requesting notification permissions');
   };
 
   const handleAllowLocation = () => {
-    // Handle location permission request
+    // Request location permissions
     console.log('Requesting location permissions');
   };
 
   const handleContinue = () => {
-    // Navigate to setup profile screen
     router.push('/setup-profile');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Navigation Bar */}
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backText}>< Back</Text>
+            <Text style={styles.backText}>{"< Back"}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Page Title */}
+        {/* Title */}
         <View style={styles.titleSection}>
           <Text style={styles.title}>Permissions</Text>
         </View>
 
-        {/* Permission Options */}
-        <View style={styles.permissionsSection}>
+        {/* Permission Cards */}
+        <View style={styles.permissionsContainer}>
           {/* Notifications Permission */}
           <View style={styles.permissionCard}>
             <View style={styles.iconContainer}>
               <View style={styles.iconBackground}>
-                <Text style={styles.bellIcon}>🔔</Text>
+                <IconSymbol size={20} name="bell.fill" color="#7B3EFF" />
               </View>
             </View>
             <View style={styles.textContainer}>
@@ -94,51 +97,46 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
     fontSize: 16,
     color: '#7B3EFF',
+    fontWeight: '500',
   },
   titleSection: {
-    marginTop: 8,
-    marginBottom: 40,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: '#1C1B1F',
   },
-  permissionsSection: {
-    flex: 1,
+  permissionsContainer: {
+    gap: 24,
   },
   permissionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    paddingVertical: 16,
   },
   iconContainer: {
     marginRight: 16,
   },
   iconBackground: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
     backgroundColor: '#F5F5F5',
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  bellIcon: {
-    fontSize: 20,
   },
   textContainer: {
     flex: 1,
@@ -146,41 +144,42 @@ const styles = StyleSheet.create({
   },
   permissionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#1C1B1F',
     marginBottom: 4,
   },
   permissionSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#6B7280',
     lineHeight: 20,
   },
   allowButton: {
     borderWidth: 1,
     borderColor: '#7B3EFF',
     borderRadius: 20,
-    paddingHorizontal: 20,
     paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   allowButtonText: {
+    color: '#7B3EFF',
     fontSize: 14,
     fontWeight: '600',
-    color: '#7B3EFF',
   },
   buttonSection: {
-    paddingHorizontal: 24,
-    paddingBottom: 34,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 16,
   },
   continueButton: {
     backgroundColor: '#7B3EFF',
-    borderRadius: 14,
-    height: 56,
-    justifyContent: 'center',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   continueButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
