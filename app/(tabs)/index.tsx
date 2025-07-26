@@ -1,107 +1,90 @@
-
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, FlatList } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 
 interface Event {
   id: string;
   title: string;
   date: string;
   location: string;
-  price: string;
-  attendeeCount: number;
-  imageUrl: string;
-  tags: string[];
+  attendance: string;
+  imageColor: string;
+  imageContent: string;
 }
 
 const mockEvents: Event[] = [
   {
     id: '1',
-    title: 'UT Austin Spring Mixer',
-    date: 'Tonight, 9:00 PM',
-    location: 'West Campus',
-    price: 'Free',
-    attendeeCount: 127,
-    imageUrl: 'https://via.placeholder.com/300x400',
-    tags: ['Party', 'College', 'Nightlife']
+    title: 'Cosmic Carnival',
+    date: 'Sat, Oct 26 · 9 PM',
+    location: 'The Venue',
+    attendance: '100+ attending',
+    imageColor: '#1a1a2e',
+    imageContent: 'Party\nCarnival'
   },
   {
     id: '2',
-    title: 'Rooftop Vibes',
-    date: 'Saturday, 8:00 PM',
-    location: 'Downtown Austin',
-    price: '$15',
-    attendeeCount: 89,
-    imageUrl: 'https://via.placeholder.com/300x400',
-    tags: ['Party', 'Rooftop', 'Music']
+    title: 'Silent Disco',
+    date: 'Fri, Oct 25 · 10 PM',
+    location: 'Secret Location',
+    attendance: '50+ attending',
+    imageColor: '#e91e63',
+    imageContent: '🎧'
   },
   {
     id: '3',
-    title: 'Study Break Social',
-    date: 'Sunday, 7:00 PM',
-    location: 'UT Campus',
-    price: 'Free',
-    attendeeCount: 64,
-    imageUrl: 'https://via.placeholder.com/300x400',
-    tags: ['Social', 'College', 'Casual']
+    title: 'Glow Rave',
+    date: 'Sat, Oct 26 · 11 PM',
+    location: 'Warehouse District',
+    attendance: '200+ attending',
+    imageColor: '#0a0a0a',
+    imageContent: '✦'
+  },
+  {
+    id: '4',
+    title: 'Indie Rock Night',
+    date: 'Fri, Oct 25 · 8 PM',
+    location: 'The Dive Bar',
+    attendance: '75+ attending',
+    imageColor: '#8bc34a',
+    imageContent: '🎸'
   }
 ];
 
-const filters = ['All', 'Tonight', 'This Weekend', 'Free', 'Trending'];
+const filters = ['Distance', 'Trending', 'Tonight'];
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
-  const [selectedFilter, setSelectedFilter] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('Distance');
 
   const renderEventCard = ({ item }: { item: Event }) => (
-    <TouchableOpacity style={[styles.eventCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-      <View style={styles.eventImage}>
-        <ThemedText style={styles.placeholderText}>Event Flyer</ThemedText>
+    <TouchableOpacity style={styles.eventCard}>
+      <View style={[styles.eventImage, { backgroundColor: item.imageColor }]}>
+        <ThemedText style={styles.eventImageText}>{item.imageContent}</ThemedText>
       </View>
       <View style={styles.eventInfo}>
         <ThemedText type="defaultSemiBold" style={styles.eventTitle}>{item.title}</ThemedText>
-        <ThemedText style={styles.eventDetails}>{item.date}</ThemedText>
-        <ThemedText style={styles.eventDetails}>{item.location}</ThemedText>
-        <View style={styles.eventMeta}>
-          <ThemedText style={[styles.price, { color: Colors[colorScheme ?? 'light'].primary }]}>
-            {item.price}
-          </ThemedText>
-          <ThemedText style={styles.attendees}>{item.attendeeCount} going</ThemedText>
-        </View>
-        <View style={styles.tagsContainer}>
-          {item.tags.map((tag, index) => (
-            <View key={index} style={[styles.tag, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-              <ThemedText style={styles.tagText}>{tag}</ThemedText>
-            </View>
-          ))}
-        </View>
+        <ThemedText style={styles.eventDetails}>{item.date} · {item.location}</ThemedText>
+        <ThemedText style={styles.eventAttendance}>{item.attendance}</ThemedText>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { backgroundColor: '#000' }]}>
       {/* Header */}
       <View style={styles.header}>
-        <ThemedText type="title" style={[styles.title, { color: Colors[colorScheme ?? 'light'].primary }]}>
-          DYSO
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>Discover Events</ThemedText>
-      </View>
-
-      {/* Search */}
-      <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-        <TextInput
-          style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
-          placeholder="Search events..."
-          placeholderTextColor={Colors[colorScheme ?? 'light'].icon}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        <TouchableOpacity style={styles.headerIcon}>
+          <IconSymbol size={24} name="location" color="#fff" />
+        </TouchableOpacity>
+        <ThemedText style={styles.headerTitle}>Events</ThemedText>
+        <TouchableOpacity style={styles.headerIcon}>
+          <IconSymbol size={24} name="slider.horizontal.3" color="#fff" />
+        </TouchableOpacity>
       </View>
 
       {/* Filters */}
@@ -111,23 +94,28 @@ export default function HomeScreen() {
             key={filter}
             style={[
               styles.filterButton,
-              selectedFilter === filter && { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+              selectedFilter === filter && styles.filterButtonSelected
             ]}
             onPress={() => setSelectedFilter(filter)}
           >
-            <ThemedText
-              style={[
-                styles.filterText,
-                selectedFilter === filter && { color: '#fff' }
-              ]}
-            >
-              {filter}
-            </ThemedText>
+            <View style={styles.filterContent}>
+              {filter === 'Distance' && <IconSymbol size={16} name="location" color={selectedFilter === filter ? "#fff" : "#888"} />}
+              {filter === 'Trending' && <IconSymbol size={16} name="chart.line.uptrend.xyaxis" color={selectedFilter === filter ? "#fff" : "#888"} />}
+              {filter === 'Tonight' && <IconSymbol size={16} name="moon" color={selectedFilter === filter ? "#fff" : "#888"} />}
+              <ThemedText
+                style={[
+                  styles.filterText,
+                  { color: selectedFilter === filter ? "#fff" : "#888" }
+                ]}
+              >
+                {filter}
+              </ThemedText>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Events Feed */}
+      {/* Events List */}
       <FlatList
         data={mockEvents}
         renderItem={renderEventCard}
@@ -142,43 +130,45 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
+    backgroundColor: '#000',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
-  title: {
-    fontSize: 28,
+  headerIcon: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  subtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  searchContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  searchInput: {
-    fontSize: 16,
-    paddingVertical: 12,
+    color: '#fff',
   },
   filtersContainer: {
     paddingHorizontal: 20,
     marginBottom: 20,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: '#2a2a2a',
     borderRadius: 20,
     marginRight: 12,
-    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  filterButtonSelected: {
+    backgroundColor: '#444',
+  },
+  filterContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   filterText: {
     fontSize: 14,
@@ -189,65 +179,39 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   eventCard: {
-    borderRadius: 16,
-    marginBottom: 20,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    marginBottom: 16,
     overflow: 'hidden',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
   },
   eventImage: {
-    height: 200,
-    backgroundColor: '#e0e0e0',
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
-  placeholderText: {
-    opacity: 0.5,
+  eventImageText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   eventInfo: {
     padding: 16,
   },
   eventTitle: {
     fontSize: 18,
-    marginBottom: 8,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
   },
   eventDetails: {
     fontSize: 14,
-    opacity: 0.7,
+    color: '#aaa',
     marginBottom: 4,
   },
-  eventMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  attendees: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  tag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  tagText: {
+  eventAttendance: {
     fontSize: 12,
-    color: '#fff',
-    fontWeight: '500',
+    color: '#888',
   },
 });
