@@ -105,7 +105,10 @@ export default function HomeScreen() {
               <ThemedText
                 style={[
                   styles.filterText,
-                  { color: selectedFilter === filter ? "#6750a4" : "#888" }
+                  { 
+                    color: selectedFilter === filter ? "#6750a4" : "#AAA",
+                    fontWeight: selectedFilter === filter ? '600' : '400'
+                  }
                 ]}
               >
                 {filter}
@@ -152,17 +155,17 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   filtersContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     marginBottom: 20,
   },
   filterButton: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    marginRight: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    marginHorizontal: 4,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -173,7 +176,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   filterButtonSelected: {
-    backgroundColor: '#e8def8',
+    backgroundColor: '#f3edff',
     borderColor: '#6750a4',
   },
   filterContent: {
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   eventsList: {
     paddingHorizontal: 20,
