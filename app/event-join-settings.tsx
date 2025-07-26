@@ -113,10 +113,10 @@ export default function EventJoinSettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Continue Button */}
+      {/* Create Event Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.continueButton}>
-          <ThemedText style={styles.continueButtonText}>Continue →</ThemedText>
+          <ThemedText style={styles.continueButtonText}>Create Event</ThemedText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
