@@ -50,10 +50,18 @@ export default function PhoneVerificationScreen() {
 
       if (error) {
         console.error('Error sending OTP:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText
+        });
+        
         if (error.message.includes('Invalid phone number')) {
           Alert.alert('Invalid Phone Number', 'Please enter a valid phone number with country code.');
         } else if (error.message.includes('rate limit')) {
           Alert.alert('Too Many Attempts', 'Please wait before requesting another code.');
+        } else if (error.message.includes('Database error') || error.message.includes('Internal Server Error')) {
+          Alert.alert('Configuration Error', 'Phone authentication is not properly set up. Please contact support.');
         } else {
           Alert.alert('Error', error.message || 'Failed to send verification code');
         }
