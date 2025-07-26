@@ -12,8 +12,22 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#1C1B1F',
+        tabBarInactiveTintColor: '#6750A4',
         headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: '#F9F6FF',
+          height: 80,
+          paddingBottom: 20,
+          paddingTop: 15,
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarItemStyle: {
+          height: 50,
+        },
       }}>
       <Tabs.Screen
         name="index"
@@ -29,7 +43,7 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
+            <TabBarIcon name={focused ? 'search' : 'search-outline'} color={color} />
           ),
         }}
       />
