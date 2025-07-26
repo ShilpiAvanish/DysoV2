@@ -12,6 +12,10 @@ export default function EventJoinSettingsScreen() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [allowPlusOne, setAllowPlusOne] = useState(false);
 
+  const handleAddTicket = () => {
+    router.push('/add-ticket');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -78,7 +82,7 @@ export default function EventJoinSettingsScreen() {
         {selectedOption === 'Tickets' && (
           <View style={styles.section}>
             <View style={styles.ticketContainer}>
-              <TouchableOpacity style={styles.addTicketButton}>
+              <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket}>
                 <ThemedText style={styles.addTicketText}>Add Ticket +</ThemedText>
               </TouchableOpacity>
             </View>

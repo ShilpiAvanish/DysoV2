@@ -24,6 +24,7 @@ const MAPPING = {
   'person.fill': 'person',
   'person': 'person',
   'magnifyingglass': 'search',
+  'calendar': 'event',
 } as IconMapping;
 
 /**
