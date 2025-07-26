@@ -37,15 +37,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="tickets"
-        options={{
-          title: 'Tickets',
-          tabBarIcon: ({ color, focused }) => (
-            <IconSymbol size={24} name={focused ? 'creditcard.fill' : 'creditcard'} color={color} />
-          ),
-        }}
-      />
+
       <Tabs.Screen
         name="create"
         options={{
@@ -55,6 +47,16 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="tickets"
+        options={{
+          title: 'Tickets',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol size={24} name={focused ? 'creditcard.fill' : 'creditcard'} color={color} />
+          ),
+        }}
+      />
+      
       <Tabs.Screen
         name="profile"
         options={{
