@@ -1,110 +1,292 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
-export default function TabTwoScreen() {
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  distance: string;
+  attendees: number;
+  category: string;
+}
+
+const mockEvents: Event[] = [
+  {
+    id: '1',
+    title: 'Tech Mixer Downtown',
+    date: 'Today, 7:00 PM',
+    location: 'Austin Tech Hub',
+    distance: '2.3 miles',
+    attendees: 45,
+    category: 'Networking'
+  },
+  {
+    id: '2',
+    title: 'Live Music Night',
+    date: 'Tomorrow, 9:00 PM',
+    location: 'The Saxon Pub',
+    distance: '1.8 miles',
+    attendees: 78,
+    category: 'Music'
+  },
+  {
+    id: '3',
+    title: 'Food Truck Festival',
+    date: 'Saturday, 12:00 PM',
+    location: 'Zilker Park',
+    distance: '3.1 miles',
+    attendees: 234,
+    category: 'Food'
+  }
+];
+
+const categories = ['All', 'Party', 'Music', 'Food', 'Sports', 'Study', 'Networking'];
+
+export default function ExploreScreen() {
+  const colorScheme = useColorScheme();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const renderEventCard = ({ item }: { item: Event }) => (
+    <TouchableOpacity style={[styles.eventCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+      <View style={styles.eventImage}>
+        <ThemedText style={styles.categoryTag}>{item.category}</ThemedText>
+      </View>
+      <View style={styles.eventDetails}>
+        <ThemedText type="defaultSemiBold" style={styles.eventTitle}>{item.title}</ThemedText>
+        <ThemedText style={styles.eventMeta}>📅 {item.date}</ThemedText>
+        <ThemedText style={styles.eventMeta}>📍 {item.location}</ThemedText>
+        <View style={styles.eventFooter}>
+          <ThemedText style={styles.distance}>{item.distance} away</ThemedText>
+          <ThemedText style={styles.attendees}>{item.attendees} going</ThemedText>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <ThemedView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <ThemedText type="title" style={[styles.title, { color: Colors[colorScheme ?? 'light'].primary }]}>
+          Explore
+        </ThemedText>
+        <ThemedText style={styles.subtitle}>Find events near you</ThemedText>
+      </View>
+
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <TextInput
+          style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+          placeholder="Search events, venues, or hosts..."
+          placeholderTextColor={Colors[colorScheme ?? 'light'].icon}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
+      </View>
+
+      {/* Location Filter */}
+      <View style={styles.locationFilter}>
+        <ThemedText style={styles.locationText}>📍 Austin, TX</ThemedText>
+        <TouchableOpacity>
+          <ThemedText style={[styles.changeLocation, { color: Colors[colorScheme ?? 'light'].primary }]}>
+            Change
           </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+        </TouchableOpacity>
+      </View>
+
+      {/* Categories */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category && { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <ThemedText
+              style={[
+                styles.categoryText,
+                selectedCategory === category && { color: '#fff' }
+              ]}
+            >
+              {category}
             </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Sort Options */}
+      <View style={styles.sortContainer}>
+        <ThemedText style={styles.sortLabel}>Sort by:</ThemedText>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {['Distance', 'Trending', 'Tonight', 'Price'].map((sort) => (
+            <TouchableOpacity key={sort} style={styles.sortButton}>
+              <ThemedText style={styles.sortText}>{sort}</ThemedText>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Events List */}
+      <FlatList
+        data={mockEvents}
+        renderItem={renderEventCard}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.eventsList}
+      />
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    paddingTop: 60,
   },
-  titleContainer: {
+  header: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+    marginTop: 4,
+  },
+  searchContainer: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  searchInput: {
+    fontSize: 16,
+    paddingVertical: 12,
+  },
+  locationFilter: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  locationText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  changeLocation: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  categoriesContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sortLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 12,
+  },
+  sortButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  sortText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  eventsList: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  eventCard: {
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  eventImage: {
+    height: 120,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    padding: 12,
+  },
+  categoryTag: {
+    backgroundColor: 'rgba(99, 46, 209, 0.9)',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  eventDetails: {
+    padding: 16,
+  },
+  eventTitle: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  eventMeta: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 4,
+  },
+  eventFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  distance: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  attendees: {
+    fontSize: 12,
+    opacity: 0.6,
   },
 });
