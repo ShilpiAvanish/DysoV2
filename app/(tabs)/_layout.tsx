@@ -1,10 +1,10 @@
-
 import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import IconSymbol from '@/components/IconSymbol';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -14,27 +14,30 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#1C1B1F',
         tabBarInactiveTintColor: '#6750A4',
-        headerShown: false,
-        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: '#F9F6FF',
           height: 80,
           paddingBottom: 20,
-          paddingTop: 15,
+          paddingTop: 10,
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarItemStyle: {
-          height: 50,
+        tabBarLabelStyle: {
+          display: 'none',
         },
-      }}>
+        tabBarIconStyle: {
+          marginBottom: 0,
+        },
+        headerShown: false,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
+            <IconSymbol size={24} name={focused ? 'house.fill' : 'house'} color={color} />
           ),
         }}
       />
@@ -43,7 +46,7 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'search' : 'search-outline'} color={color} />
+            <IconSymbol size={24} name={focused ? 'magnifyingglass' : 'magnifyingglass'} color={color} />
           ),
         }}
       />
@@ -52,7 +55,7 @@ export default function TabLayout() {
         options={{
           title: 'Create',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'add-circle' : 'add-circle-outline'} color={color} />
+            <IconSymbol size={24} name={focused ? 'plus.circle.fill' : 'plus.circle'} color={color} />
           ),
         }}
       />
@@ -61,7 +64,7 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'person' : 'person-outline'} color={color} />
+            <IconSymbol size={24} name={focused ? 'person.fill' : 'person'} color={color} />
           ),
         }}
       />

@@ -3,12 +3,18 @@ import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, SafeAreaView
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useRouter } from 'expo-router';
 
 export default function CreateEventScreen() {
+  const router = useRouter();
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventLocation, setEventLocation] = useState('');
   const [eventDescription, setEventDescription] = useState('');
+
+  const handleNext = () => {
+    router.push('/event-join-settings');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -106,7 +112,7 @@ export default function CreateEventScreen() {
 
       {/* Next Button */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.nextButton}>
+        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <ThemedText style={styles.nextButtonText}>Next →</ThemedText>
         </TouchableOpacity>
       </View>
