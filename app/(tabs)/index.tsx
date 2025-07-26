@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useRouter } from 'expo-router';
 
 interface Event {
   id: string;
@@ -60,9 +60,10 @@ const filters = ['Distance', 'Trending', 'Tonight'];
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const [selectedFilter, setSelectedFilter] = useState('Distance');
+    const router = useRouter();
 
   const renderEventCard = ({ item }: { item: Event }) => (
-    <TouchableOpacity style={styles.eventCard}>
+    <TouchableOpacity style={styles.eventCard} onPress={() => router.push(`/event/${item.id}`)}>
       <View style={[styles.eventImage, { backgroundColor: item.imageColor }]}>
         <ThemedText style={styles.eventImageText}>{item.imageContent}</ThemedText>
       </View>

@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useRouter } from 'expo-router';
 
 interface Event {
   id: string;
@@ -49,11 +50,15 @@ const categories = ['All', 'Party', 'Music', 'Food', 'Sports', 'Study', 'Network
 
 export default function ExploreScreen() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const renderEventCard = ({ item }: { item: Event }) => (
-    <TouchableOpacity style={[styles.eventCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+    <TouchableOpacity 
+      style={[styles.eventCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+      onPress={() => router.push('/event-details')}
+    >
       <View style={styles.eventImage}>
         <ThemedText style={styles.categoryTag}>{item.category}</ThemedText>
       </View>
