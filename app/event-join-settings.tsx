@@ -248,59 +248,62 @@ export default function EventJoinSettingsScreen() {
         {/* Ticket Container */}
         {selectedOption === 'Tickets' && (
           <View style={styles.section}>
-            {/* Display existing tickets stacked vertically */}
-            {tickets.map((ticket) => (
-              <View key={ticket.id} style={styles.ticketCard}>
-                <View style={styles.ticketCardHeader}>
-                  <View style={styles.ticketCardInfo}>
-                    <ThemedText style={styles.ticketCardName}>{ticket.ticketName}</ThemedText>
-                    <ThemedText style={styles.ticketCardType}>{ticket.ticketType}</ThemedText>
-                  </View>
-                  <View style={styles.ticketCardActions}>
-                    <TouchableOpacity 
-                      style={styles.ticketActionButton} 
-                      onPress={() => handleEditTicket(ticket.id)}
-                    >
-                      <IconSymbol size={16} name="pencil" color="#7B3EFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.ticketActionButton} 
-                      onPress={() => handleDeleteTicket(ticket.id)}
-                    >
-                      <IconSymbol size={16} name="trash" color="#FF3B30" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <View style={styles.ticketCardDetails}>
-                  <View style={styles.ticketDetailRow}>
-                    <ThemedText style={styles.ticketDetailLabel}>Price:</ThemedText>
-                    <ThemedText style={styles.ticketDetailValue}>
-                      {ticket.price === '0' || ticket.price === '' ? 'Free' : `$${ticket.price}`}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.ticketDetailRow}>
-                    <ThemedText style={styles.ticketDetailLabel}>Capacity:</ThemedText>
-                    <ThemedText style={styles.ticketDetailValue}>
-                      {ticket.capacity || 'Unlimited'}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.ticketDetailRow}>
-                    <ThemedText style={styles.ticketDetailLabel}>Sales Period:</ThemedText>
-                    <ThemedText style={styles.ticketDetailValue}>
-                      {new Date(ticket.startDate).toLocaleDateString()} - {new Date(ticket.endDate).toLocaleDateString()}
-                    </ThemedText>
-                  </View>
-                  {ticket.requireApproval && (
-                    <View style={styles.ticketDetailRow}>
-                      <ThemedText style={styles.ticketDetailLabel}>Requires Approval</ThemedText>
+            {/* Tickets List Container */}
+            <View style={styles.ticketsListContainer}>
+              {/* Display existing tickets stacked vertically */}
+              {tickets.map((ticket) => (
+                <View key={ticket.id} style={styles.ticketCard}>
+                  <View style={styles.ticketCardHeader}>
+                    <View style={styles.ticketCardInfo}>
+                      <ThemedText style={styles.ticketCardName}>{ticket.ticketName}</ThemedText>
+                      <ThemedText style={styles.ticketCardType}>{ticket.ticketType}</ThemedText>
                     </View>
-                  )}
+                    <View style={styles.ticketCardActions}>
+                      <TouchableOpacity 
+                        style={styles.ticketActionButton} 
+                        onPress={() => handleEditTicket(ticket.id)}
+                      >
+                        <IconSymbol size={16} name="pencil" color="#7B3EFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.ticketActionButton} 
+                        onPress={() => handleDeleteTicket(ticket.id)}
+                      >
+                        <IconSymbol size={16} name="trash" color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <View style={styles.ticketCardDetails}>
+                    <View style={styles.ticketDetailRow}>
+                      <ThemedText style={styles.ticketDetailLabel}>Price:</ThemedText>
+                      <ThemedText style={styles.ticketDetailValue}>
+                        {ticket.price === '0' || ticket.price === '' ? 'Free' : `$${ticket.price}`}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.ticketDetailRow}>
+                      <ThemedText style={styles.ticketDetailLabel}>Capacity:</ThemedText>
+                      <ThemedText style={styles.ticketDetailValue}>
+                        {ticket.capacity || 'Unlimited'}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.ticketDetailRow}>
+                      <ThemedText style={styles.ticketDetailLabel}>Sales Period:</ThemedText>
+                      <ThemedText style={styles.ticketDetailValue}>
+                        {new Date(ticket.startDate).toLocaleDateString()} - {new Date(ticket.endDate).toLocaleDateString()}
+                      </ThemedText>
+                    </View>
+                    {ticket.requireApproval && (
+                      <View style={styles.ticketDetailRow}>
+                        <ThemedText style={styles.ticketDetailLabel}>Requires Approval</ThemedText>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
             
             {/* Add Ticket Button - always at the bottom */}
-            <View style={[styles.ticketContainer, tickets.length > 0 && styles.addTicketContainerWithTickets]}>
+            <View style={styles.ticketContainer}>
               <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket}>
                 <ThemedText style={styles.addTicketText}>Add Ticket +</ThemedText>
               </TouchableOpacity>
@@ -440,18 +443,16 @@ const styles = StyleSheet.create({
   toggleTextInactive: {
     color: '#1C1B1F',
   },
+  ticketsListContainer: {
+    marginBottom: 16,
+  },
   ticketContainer: {
     backgroundColor: '#F5F5F5',
     borderRadius: 16,
-    padding: 40,
+    padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 120,
-  },
-  addTicketContainerWithTickets: {
-    marginTop: 16,
     minHeight: 80,
-    padding: 24,
   },
   addTicketButton: {
     backgroundColor: '#888888',
@@ -468,7 +469,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     shadowColor: '#000000',
