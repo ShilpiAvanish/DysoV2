@@ -1,24 +1,52 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import * as Notifications from 'expo-notifications';
+import * as Location from 'expo-location';
 
 export default function PermissionsScreen() {
-  const handleAllowNotifications = () => {
-    // Request notification permissions
-    console.log('Requesting notification permissions');
+  const [notificationPermission, setNotificationPermission] = useState<string>('undetermined');
+  const [locationPermission, setLocationPermission] = useState<string>('undetermined');
+
+  const handleAllowNotifications = async () => {
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      setNotificationPermission(status);
+      
+      if (status === 'granted') {
+        Alert.alert('Success', 'Notification permissions granted!');
+      } else if (status === 'denied') {
+        Alert.alert('Denied', 'Notification permissions were denied. You can enable them in Settings.');
+      }
+    } catch (error) {
+      console.error('Error requesting notification permissions:', error);
+      Alert.alert('Error', 'Failed to request notification permissions');
+    }
   };
 
-  const handleAllowLocation = () => {
-    // Request location permissions
-    console.log('Requesting location permissions');
+  const handleAllowLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status);
+      
+      if (status === 'granted') {
+        Alert.alert('Success', 'Location permissions granted!');
+      } else if (status === 'denied') {
+        Alert.alert('Denied', 'Location permissions were denied. You can enable them in Settings.');
+      }
+    } catch (error) {
+      console.error('Error requesting location permissions:', error);
+      Alert.alert('Error', 'Failed to request location permissions');
+    }
   };
 
   const handleContinue = () => {
@@ -56,7 +84,9 @@ export default function PermissionsScreen() {
               </Text>
             </View>
             <TouchableOpacity style={styles.allowButton} onPress={handleAllowNotifications}>
-              <Text style={styles.allowButtonText}>Allow</Text>
+              <Text style={styles.allowButtonText}>
+                {notificationPermission === 'granted' ? 'Granted' : 'Allow'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -74,7 +104,9 @@ export default function PermissionsScreen() {
               </Text>
             </View>
             <TouchableOpacity style={styles.allowButton} onPress={handleAllowLocation}>
-              <Text style={styles.allowButtonText}>Allow</Text>
+              <Text style={styles.allowButtonText}>
+                {locationPermission === 'granted' ? 'Granted' : 'Allow'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
