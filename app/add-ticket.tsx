@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, SafeAreaView, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput, SafeAreaView, Switch, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function AddTicketScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [selectedTicketType, setSelectedTicketType] = useState('Custom');
   const [ticketName, setTicketName] = useState('');
   const [price, setPrice] = useState('');
@@ -15,11 +16,59 @@ export default function AddTicketScreen() {
   const [endDate, setEndDate] = useState('Jul 27, 2025 at 1:21 PM');
   const [requireApproval, setRequireApproval] = useState(false);
 
+  const isEditing = !!params.editTicketId;
+
+  // Load ticket data if editing
+  useEffect(() => {
+    if (isEditing && params.ticketType) {
+      setSelectedTicketType(params.ticketType as string);
+      setTicketName(params.ticketName as string || '');
+      setPrice(params.price as string || '');
+      setCapacity(params.capacity as string || '');
+      setStartDate(params.startDate as string || 'Jul 26, 2025 at 1:21 PM');
+      setEndDate(params.endDate as string || 'Jul 27, 2025 at 1:21 PM');
+      setRequireApproval(params.requireApproval === 'true');
+    }
+  }, [params]);
+
   const ticketTypes = ['Custom', 'Presale', 'Door'];
 
   const handleSave = () => {
-    // Handle save logic here
-    router.back();
+    // Validate required fields
+    if (!ticketName.trim()) {
+      Alert.alert('Error', 'Ticket name is required');
+      return;
+    }
+
+    if (!price.trim()) {
+      Alert.alert('Error', 'Price is required');
+      return;
+    }
+
+    if (!capacity.trim()) {
+      Alert.alert('Error', 'Capacity is required');
+      return;
+    }
+
+    // Prepare ticket data
+    const ticketData = {
+      ticketType: selectedTicketType,
+      ticketName: ticketName.trim(),
+      price: price.trim(),
+      capacity: capacity.trim(),
+      startDate,
+      endDate,
+      requireApproval
+    };
+
+    // Navigate back with ticket data
+    router.push({
+      pathname: '/event-join-settings',
+      params: {
+        newTicket: JSON.stringify(ticketData),
+        editTicketId: isEditing ? params.editTicketId : undefined
+      }
+    });
   };
 
   return (
@@ -30,14 +79,18 @@ export default function AddTicketScreen() {
           <IconSymbol size={20} name="chevron.left" color="#007AFF" />
           <ThemedText style={styles.backText}>Back</ThemedText>
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Add Ticket</ThemedText>
+        <ThemedText style={styles.headerTitle}>
+          {isEditing ? 'Edit Ticket' : 'Add Ticket'}
+        </ThemedText>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Section Header */}
         <View style={styles.section}>
-          <ThemedText style={styles.title}>Add Ticket</ThemedText>
+          <ThemedText style={styles.title}>
+            {isEditing ? 'Edit Ticket' : 'Add Ticket'}
+          </ThemedText>
         </View>
 
         {/* Ticket Type Toggle */}

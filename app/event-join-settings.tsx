@@ -7,6 +7,17 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
+interface Ticket {
+  id: string;
+  ticketType: string;
+  ticketName: string;
+  price: string;
+  capacity: string;
+  startDate: string;
+  endDate: string;
+  requireApproval: boolean;
+}
+
 export default function EventJoinSettingsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -14,10 +25,70 @@ export default function EventJoinSettingsScreen() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [allowPlusOne, setAllowPlusOne] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
   const handleAddTicket = () => {
     router.push('/add-ticket');
   };
+
+  const handleEditTicket = (ticketId: string) => {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (ticket) {
+      router.push({
+        pathname: '/add-ticket',
+        params: {
+          editTicketId: ticketId,
+          ticketType: ticket.ticketType,
+          ticketName: ticket.ticketName,
+          price: ticket.price,
+          capacity: ticket.capacity,
+          startDate: ticket.startDate,
+          endDate: ticket.endDate,
+          requireApproval: ticket.requireApproval.toString()
+        }
+      });
+    }
+  };
+
+  const handleDeleteTicket = (ticketId: string) => {
+    Alert.alert(
+      'Delete Ticket',
+      'Are you sure you want to delete this ticket?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            setTickets(prev => prev.filter(ticket => ticket.id !== ticketId));
+          }
+        }
+      ]
+    );
+  };
+
+  // Listen for ticket data from add-ticket page
+  React.useEffect(() => {
+    const unsubscribe = router.addListener('focus', () => {
+      // Check if we have ticket data in params (when returning from add-ticket)
+      if (params.newTicket) {
+        const ticketData = JSON.parse(params.newTicket as string);
+        if (params.editTicketId) {
+          // Update existing ticket
+          setTickets(prev => prev.map(ticket => 
+            ticket.id === params.editTicketId ? { ...ticketData, id: params.editTicketId } : ticket
+          ));
+        } else {
+          // Add new ticket
+          setTickets(prev => [...prev, { ...ticketData, id: Date.now().toString() }]);
+        }
+        // Clear the params
+        router.setParams({ newTicket: undefined, editTicketId: undefined });
+      }
+    });
+
+    return unsubscribe;
+  }, [params]);
 
   const convertDateToTimestamp = (dateString: string) => {
     // Convert MM/DD/YYYY to ISO timestamp
@@ -71,6 +142,29 @@ export default function EventJoinSettingsScreen() {
       }
 
       console.log('Event created successfully:', newEvent);
+
+      // If tickets were added, save them to the database
+      if (selectedOption === 'Tickets' && tickets.length > 0) {
+        const ticketData = tickets.map(ticket => ({
+          event_id: newEvent.id,
+          name: ticket.ticketName,
+          price: parseFloat(ticket.price) || 0,
+          capacity: parseInt(ticket.capacity) || null,
+          ticket_type: ticket.ticketType.toLowerCase(),
+          start_sale_date: new Date(ticket.startDate).toISOString(),
+          end_sale_date: new Date(ticket.endDate).toISOString(),
+          require_approval: ticket.requireApproval
+        }));
+
+        const { error: ticketsError } = await supabase
+          .from('tickets')
+          .insert(ticketData);
+
+        if (ticketsError) {
+          console.error('Error creating tickets:', ticketsError);
+          Alert.alert('Warning', 'Event created but there was an issue with tickets. Please check your event.');
+        }
+      }
       
       Alert.alert('Success', 'Event created successfully!', [
         {
@@ -152,6 +246,57 @@ export default function EventJoinSettingsScreen() {
         {/* Ticket Container */}
         {selectedOption === 'Tickets' && (
           <View style={styles.section}>
+            {/* Display existing tickets */}
+            {tickets.map((ticket) => (
+              <View key={ticket.id} style={styles.ticketCard}>
+                <View style={styles.ticketCardHeader}>
+                  <View style={styles.ticketCardInfo}>
+                    <ThemedText style={styles.ticketCardName}>{ticket.ticketName}</ThemedText>
+                    <ThemedText style={styles.ticketCardType}>{ticket.ticketType}</ThemedText>
+                  </View>
+                  <View style={styles.ticketCardActions}>
+                    <TouchableOpacity 
+                      style={styles.ticketActionButton} 
+                      onPress={() => handleEditTicket(ticket.id)}
+                    >
+                      <IconSymbol size={16} name="pencil" color="#7B3EFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.ticketActionButton} 
+                      onPress={() => handleDeleteTicket(ticket.id)}
+                    >
+                      <IconSymbol size={16} name="trash" color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View style={styles.ticketCardDetails}>
+                  <View style={styles.ticketDetailRow}>
+                    <ThemedText style={styles.ticketDetailLabel}>Price:</ThemedText>
+                    <ThemedText style={styles.ticketDetailValue}>
+                      {ticket.price === '0' || ticket.price === '' ? 'Free' : `$${ticket.price}`}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.ticketDetailRow}>
+                    <ThemedText style={styles.ticketDetailLabel}>Capacity:</ThemedText>
+                    <ThemedText style={styles.ticketDetailValue}>
+                      {ticket.capacity || 'Unlimited'}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.ticketDetailRow}>
+                    <ThemedText style={styles.ticketDetailLabel}>Sales Period:</ThemedText>
+                    <ThemedText style={styles.ticketDetailValue}>
+                      {new Date(ticket.startDate).toLocaleDateString()} - {new Date(ticket.endDate).toLocaleDateString()}
+                    </ThemedText>
+                  </View>
+                  {ticket.requireApproval && (
+                    <View style={styles.ticketDetailRow}>
+                      <ThemedText style={styles.ticketDetailLabel}>Requires Approval</ThemedText>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))}
+            
             <View style={styles.ticketContainer}>
               <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket}>
                 <ThemedText style={styles.addTicketText}>Add Ticket +</ThemedText>
@@ -309,6 +454,69 @@ const styles = StyleSheet.create({
   addTicketText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  ticketCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  ticketCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  ticketCardInfo: {
+    flex: 1,
+  },
+  ticketCardName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1C1B1F',
+    marginBottom: 4,
+  },
+  ticketCardType: {
+    fontSize: 14,
+    color: '#7B3EFF',
+    fontWeight: '600',
+  },
+  ticketCardActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  ticketActionButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  ticketCardDetails: {
+    gap: 8,
+  },
+  ticketDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ticketDetailLabel: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  ticketDetailValue: {
+    fontSize: 14,
+    color: '#1C1B1F',
     fontWeight: '600',
   },
   switchRow: {
