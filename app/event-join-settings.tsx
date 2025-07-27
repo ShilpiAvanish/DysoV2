@@ -248,7 +248,7 @@ export default function EventJoinSettingsScreen() {
         {/* Ticket Container */}
         {selectedOption === 'Tickets' && (
           <View style={styles.section}>
-            {/* Display existing tickets */}
+            {/* Display existing tickets stacked vertically */}
             {tickets.map((ticket) => (
               <View key={ticket.id} style={styles.ticketCard}>
                 <View style={styles.ticketCardHeader}>
@@ -299,7 +299,8 @@ export default function EventJoinSettingsScreen() {
               </View>
             ))}
             
-            <View style={styles.ticketContainer}>
+            {/* Add Ticket Button - always at the bottom */}
+            <View style={[styles.ticketContainer, tickets.length > 0 && styles.addTicketContainerWithTickets]}>
               <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket}>
                 <ThemedText style={styles.addTicketText}>Add Ticket +</ThemedText>
               </TouchableOpacity>
@@ -446,6 +447,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 120,
+  },
+  addTicketContainerWithTickets: {
+    marginTop: 16,
+    minHeight: 80,
+    padding: 24,
   },
   addTicketButton: {
     backgroundColor: '#888888',
