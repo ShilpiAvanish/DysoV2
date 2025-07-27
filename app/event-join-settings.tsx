@@ -71,19 +71,23 @@ export default function EventJoinSettingsScreen() {
   useFocusEffect(
     React.useCallback(() => {
       // Check if we have ticket data in params (when returning from add-ticket)
-      if (params.newTicket) {
-        const ticketData = JSON.parse(params.newTicket as string);
-        if (params.editTicketId) {
-          // Update existing ticket
-          setTickets(prev => prev.map(ticket => 
-            ticket.id === params.editTicketId ? { ...ticketData, id: params.editTicketId } : ticket
-          ));
-        } else {
-          // Add new ticket
-          setTickets(prev => [...prev, { ...ticketData, id: Date.now().toString() }]);
+      if (params.newTicket && params.newTicket !== 'undefined') {
+        try {
+          const ticketData = JSON.parse(params.newTicket as string);
+          if (params.editTicketId) {
+            // Update existing ticket
+            setTickets(prev => prev.map(ticket => 
+              ticket.id === params.editTicketId ? { ...ticketData, id: params.editTicketId } : ticket
+            ));
+          } else {
+            // Add new ticket
+            setTickets(prev => [...prev, { ...ticketData, id: Date.now().toString() }]);
+          }
+          // Clear the params
+          router.setParams({ newTicket: undefined, editTicketId: undefined });
+        } catch (error) {
+          console.error('Error parsing ticket data:', error);
         }
-        // Clear the params
-        router.setParams({ newTicket: undefined, editTicketId: undefined });
       }
     }, [params.newTicket, params.editTicketId])
   );
