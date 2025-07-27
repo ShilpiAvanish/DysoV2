@@ -65,29 +65,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const formatBirthday = (birthday: string) => {
-    if (!birthday) return '';
-    const date = new Date(birthday);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  const getAge = (birthday: string) => {
-    if (!birthday) return '';
-    const today = new Date();
-    const birthDate = new Date(birthday);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    
-    return age;
-  };
+  
 
   const handleEditProfile = () => {
     router.push('/setup-profile');
@@ -136,18 +114,6 @@ export default function ProfileScreen() {
           <ThemedText style={styles.profileUniversity}>
             {profile.university || 'No university specified'}
           </ThemedText>
-          
-          {profile.birthday && (
-            <ThemedText style={styles.profileAge}>
-              Age {getAge(profile.birthday)} • Born {formatBirthday(profile.birthday)}
-            </ThemedText>
-          )}
-          
-          {profile.gender && (
-            <ThemedText style={styles.profileGender}>
-              {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
-            </ThemedText>
-          )}
           
           <ThemedText style={styles.profileBio}>
             {profile.bio || 'No bio provided yet.'}
@@ -277,18 +243,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-  profileAge: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  profileGender: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
+  
   profileBio: {
     fontSize: 15,
     textAlign: 'center',
