@@ -1,15 +1,121 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
+
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'expo-router';
 
 const tabs = ['Attending', 'Saved', 'Hosting', 'Hosted'];
 
+interface Profile {
+  id: string;
+  username: string;
+  full_name: string;
+  bio: string;
+  university: string;
+  birthday: string;
+  gender: string;
+  phone_number: string;
+  created_at: string;
+}
+
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('Attending');
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        Alert.alert('Error', 'You must be logged in to view your profile');
+        return;
+      }
+
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        Alert.alert('Error', 'Failed to load profile data');
+        return;
+      }
+
+      setProfile(profileData);
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatBirthday = (birthday: string) => {
+    if (!birthday) return '';
+    const date = new Date(birthday);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const getAge = (birthday: string) => {
+    if (!birthday) return '';
+    const today = new Date();
+    const birthDate = new Date(birthday);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
+  const handleEditProfile = () => {
+    router.push('/setup-profile');
+  };
+
+  if (isLoading) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6750A4" />
+          <ThemedText style={styles.loadingText}>Loading profile...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>Profile not found</ThemedText>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchProfile}>
+            <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -21,14 +127,33 @@ export default function ProfileScreen() {
               <ThemedText style={styles.profileEmoji}>👤</ThemedText>
             </View>
           </View>
-          <ThemedText style={styles.profileName}>Alex Johnson</ThemedText>
-          <ThemedText style={styles.profileHandle}>@alexjohnson</ThemedText>
-          <ThemedText style={styles.profileUniversity}>University of Texas at Austin</ThemedText>
+          <ThemedText style={styles.profileName}>
+            {profile.full_name || 'No name provided'}
+          </ThemedText>
+          <ThemedText style={styles.profileHandle}>
+            @{profile.username}
+          </ThemedText>
+          <ThemedText style={styles.profileUniversity}>
+            {profile.university || 'No university specified'}
+          </ThemedText>
+          
+          {profile.birthday && (
+            <ThemedText style={styles.profileAge}>
+              Age {getAge(profile.birthday)} • Born {formatBirthday(profile.birthday)}
+            </ThemedText>
+          )}
+          
+          {profile.gender && (
+            <ThemedText style={styles.profileGender}>
+              {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
+            </ThemedText>
+          )}
+          
           <ThemedText style={styles.profileBio}>
-            Senior studying Business 📚 Event enthusiast 🎉 Love connecting people!
+            {profile.bio || 'No bio provided yet.'}
           </ThemedText>
 
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
             <ThemedText style={styles.editButtonText}>Edit Profile</ThemedText>
           </TouchableOpacity>
         </View>
@@ -78,6 +203,39 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6750A4',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#1C1B1F',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#6750A4',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   profileHeader: {
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -116,6 +274,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6750A4',
     fontWeight: '500',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  profileAge: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  profileGender: {
+    fontSize: 14,
+    color: '#666666',
     marginBottom: 12,
     textAlign: 'center',
   },
