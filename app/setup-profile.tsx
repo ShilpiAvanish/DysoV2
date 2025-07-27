@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useSupabase } from '@/utils';
 
 export default function SetupProfileScreen() {
   const router = useRouter();
@@ -12,7 +12,10 @@ export default function SetupProfileScreen() {
   const [bio, setBio] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
   const [birthday, setBirthday] = useState('');
-  const [campus, setCampus] = useState('');
+  const [campus, setCampus] = useState('UT Austin'); // Set default campus to UT Austin
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const supabase = useSupabase();
+
 
   const handleUpload = () => {
     // Handle photo upload
@@ -24,11 +27,89 @@ export default function SetupProfileScreen() {
     console.log('Take photo');
   };
 
-  const handleComplete = () => {
-    // Handle profile completion
-    console.log('Profile setup complete');
-    // Navigate to main app or next screen
-    router.push('/(tabs)');
+  const handleComplete = async () => {
+    // Validate required fields
+    if (!username.trim()) {
+      Alert.alert('Error', 'Username is required');
+      return;
+    }
+
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name is required');
+      return;
+    }
+
+    if (!birthday.trim()) {
+      Alert.alert('Error', 'Birthday is required');
+      return;
+    }
+
+    if (!campus.trim()) {
+      Alert.alert('Error', 'Campus is required');
+      return;
+    }
+
+    // Basic birthday format validation (MM/DD/YYYY)
+    const birthdayRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+    if (!birthdayRegex.test(birthday)) {
+      Alert.alert('Error', 'Please enter birthday in MM/DD/YYYY format');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        Alert.alert('Error', 'You must be logged in to complete your profile');
+        return;
+      }
+
+      // Convert birthday from MM/DD/YYYY to YYYY-MM-DD for database
+      const [month, day, year] = birthday.split('/');
+      const formattedBirthday = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+      // Prepare profile data
+      const profileData = {
+        id: user.id,
+        username: username.trim(),
+        full_name: name.trim(),
+        bio: bio.trim() || null,
+        birthday: formattedBirthday,
+        gender: selectedGender.toLowerCase() || null,
+        university: campus.trim(),
+        phone_number: user.phone || null,
+      };
+
+      // Insert or update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profileData, {
+          onConflict: 'id'
+        });
+
+      if (profileError) {
+        console.error('Error saving profile:', profileError);
+        Alert.alert('Error', 'Failed to save profile. Please try again.');
+        return;
+      }
+
+      console.log('Profile setup complete');
+      Alert.alert('Success', 'Profile setup complete!', [
+        {
+          text: 'OK',
+          onPress: () => router.push('/(tabs)')
+        }
+      ]);
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const genderOptions = ['Male', 'Female', 'Other'];
@@ -58,12 +139,7 @@ export default function SetupProfileScreen() {
               </View>
             </View>
             <View style={styles.photoButtonsContainer}>
-              <TouchableOpacity style={styles.photoButton} onPress={handleUpload}>
-                <Text style={styles.photoButtonText}>Upload</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
-                <Text style={styles.photoButtonText}>Take photo</Text>
-              </TouchableOpacity>
+              {/* Remove Upload/Take Photo buttons */}
             </View>
           </View>
 
@@ -163,19 +239,11 @@ export default function SetupProfileScreen() {
             {/* Campus */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Campus</Text>
-              <View style={styles.dropdownContainer}>
-                <TextInput
-                  style={[styles.input, styles.dropdownInput]}
-                  placeholder="Find your campus"
-                  placeholderTextColor="#A0A0A0"
-                  value={campus}
-                  onChangeText={setCampus}
-                />
-                <TouchableOpacity style={styles.dropdownIcon}>
-                  <IconSymbol size={16} name="chevron.right" color="#8E8E93" />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.helpText}>We'll suggest campuses nearby</Text>
+              <TextInput
+                style={styles.input}
+                value="UT Austin"
+                editable={false} // Make it non-editable
+              />
             </View>
           </View>
         </ScrollView>
@@ -183,8 +251,8 @@ export default function SetupProfileScreen() {
 
       {/* Complete Button */}
       <View style={styles.buttonSection}>
-        <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
-          <Text style={styles.completeButtonText}>Complete →</Text>
+        <TouchableOpacity style={styles.completeButton} onPress={handleComplete} disabled={isLoading}>
+          <Text style={styles.completeButtonText}>{isLoading ? "Saving..." : "Complete →"}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
