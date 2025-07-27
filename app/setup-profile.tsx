@@ -14,7 +14,7 @@ export default function SetupProfileScreen() {
   const [birthday, setBirthday] = useState('');
   const [campus, setCampus] = useState('UT Austin'); // Set default campus to UT Austin
   const [isLoading, setIsLoading] = useState(false); // Loading state
-  
+
 
 
   const handleUpload = () => {
