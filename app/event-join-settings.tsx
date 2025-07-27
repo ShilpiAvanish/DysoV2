@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Switch, A
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
 interface Ticket {
@@ -68,8 +68,8 @@ export default function EventJoinSettingsScreen() {
   };
 
   // Listen for ticket data from add-ticket page
-  React.useEffect(() => {
-    const unsubscribe = router.addListener('focus', () => {
+  useFocusEffect(
+    React.useCallback(() => {
       // Check if we have ticket data in params (when returning from add-ticket)
       if (params.newTicket) {
         const ticketData = JSON.parse(params.newTicket as string);
@@ -85,10 +85,8 @@ export default function EventJoinSettingsScreen() {
         // Clear the params
         router.setParams({ newTicket: undefined, editTicketId: undefined });
       }
-    });
-
-    return unsubscribe;
-  }, [params]);
+    }, [params.newTicket, params.editTicketId])
+  );
 
   const convertDateToTimestamp = (dateString: string) => {
     // Convert MM/DD/YYYY to ISO timestamp
