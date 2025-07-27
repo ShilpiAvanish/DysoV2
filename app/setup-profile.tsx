@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useSupabase } from '@/utils';
+import { supabase } from '@/lib/supabase';
 
 export default function SetupProfileScreen() {
   const router = useRouter();
@@ -14,7 +14,7 @@ export default function SetupProfileScreen() {
   const [birthday, setBirthday] = useState('');
   const [campus, setCampus] = useState('UT Austin'); // Set default campus to UT Austin
   const [isLoading, setIsLoading] = useState(false); // Loading state
-  const supabase = useSupabase();
+  
 
 
   const handleUpload = () => {
