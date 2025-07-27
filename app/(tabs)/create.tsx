@@ -13,7 +13,34 @@ export default function CreateEventScreen() {
   const [eventDescription, setEventDescription] = useState('');
 
   const handleNext = () => {
-    router.push('/event-join-settings');
+    // Validate required fields
+    if (!eventTitle.trim()) {
+      alert('Event name is required');
+      return;
+    }
+    if (!eventDate.trim()) {
+      alert('Event date is required');
+      return;
+    }
+    if (!eventLocation.trim()) {
+      alert('Location is required');
+      return;
+    }
+    if (!eventDescription.trim()) {
+      alert('Description is required');
+      return;
+    }
+
+    // Pass event data to next screen
+    router.push({
+      pathname: '/event-join-settings',
+      params: {
+        eventTitle,
+        eventDate,
+        eventLocation,
+        eventDescription
+      }
+    });
   };
 
   return (

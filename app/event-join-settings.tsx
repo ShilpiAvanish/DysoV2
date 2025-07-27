@@ -1,19 +1,90 @@
 
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Switch } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Switch, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 
 export default function EventJoinSettingsScreen() {
   const router = useRouter();
-  const [selectedOption, setSelectedOption] = useState('Tickets');
+  const params = useLocalSearchParams();
+  const [selectedOption, setSelectedOption] = useState('RSVP');
   const [requireApproval, setRequireApproval] = useState(false);
   const [allowPlusOne, setAllowPlusOne] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAddTicket = () => {
     router.push('/add-ticket');
+  };
+
+  const convertDateToTimestamp = (dateString: string) => {
+    // Convert MM/DD/YYYY to ISO timestamp
+    const [month, day, year] = dateString.split('/');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    // Set time to 8 PM as default
+    date.setHours(20, 0, 0, 0);
+    return date.toISOString();
+  };
+
+  const handleCreateEvent = async () => {
+    setIsLoading(true);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        Alert.alert('Error', 'You must be logged in to create an event');
+        return;
+      }
+
+      // Prepare event data
+      const eventData = {
+        title: params.eventTitle as string,
+        description: params.eventDescription as string,
+        host_id: user.id,
+        date_time: convertDateToTimestamp(params.eventDate as string),
+        location: params.eventLocation as string,
+        address: params.eventLocation as string, // Use location as address for now
+        is_private: false, // Default to public
+        require_approval: requireApproval,
+        allow_plus_one: allowPlusOne,
+        join_type: selectedOption.toLowerCase(), // 'rsvp' or 'tickets'
+        tags: [], // Default empty array
+      };
+
+      console.log('Creating event with data:', eventData);
+
+      // Insert event into Supabase
+      const { data: newEvent, error: eventError } = await supabase
+        .from('events')
+        .insert([eventData])
+        .select()
+        .single();
+
+      if (eventError) {
+        console.error('Error creating event:', eventError);
+        Alert.alert('Error', 'Failed to create event. Please try again.');
+        return;
+      }
+
+      console.log('Event created successfully:', newEvent);
+      
+      Alert.alert('Success', 'Event created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => router.push('/(tabs)/profile')
+        }
+      ]);
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -115,8 +186,14 @@ export default function EventJoinSettingsScreen() {
 
       {/* Create Event Button */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.continueButton}>
-          <ThemedText style={styles.continueButtonText}>Create Event</ThemedText>
+        <TouchableOpacity 
+          style={[styles.continueButton, { opacity: isLoading ? 0.6 : 1 }]} 
+          onPress={handleCreateEvent}
+          disabled={isLoading}
+        >
+          <ThemedText style={styles.continueButtonText}>
+            {isLoading ? 'Creating Event...' : 'Create Event'}
+          </ThemedText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
