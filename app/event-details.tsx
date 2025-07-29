@@ -1,46 +1,88 @@
 
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 
-interface EventDetailsProps {
-  // In a real app, this would come from route params or props
-  event?: {
-    id: string;
-    title: string;
-    host: string;
-    tags: string[];
-    address: string;
-    date: string;
-    admission: string;
-    description: string;
-    attendees: any[];
-    isPrivate: boolean;
-    ticketType: string;
-    ticketPrice: string;
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date_time: string;
+  location: string;
+  address?: string;
+  host_id: string;
+  is_private: boolean;
+  require_approval: boolean;
+  allow_plus_one: boolean;
+  join_type: string;
+  tags: string[];
+  created_at: string;
+  host?: {
+    username: string;
+    full_name: string;
   };
 }
 
-export default function EventDetailsScreen({ event }: EventDetailsProps) {
+export default function EventDetailsScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const [event, setEvent] = useState<Event | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isGoing, setIsGoing] = useState(false);
 
-  // Mock data - in real app this would come from props/route params
-  const eventData = event || {
-    id: '1',
-    title: 'College Party',
-    host: 'Alex',
-    tags: ['Party', 'College', 'Nightlife'],
-    address: '123 Main St, Anytown',
-    date: 'Fri, Oct 27, 9 PM',
-    admission: 'Free',
-    description: 'Join us for the biggest college party of the year!\nMusic, drinks, and good vibes all night long.\nDon\'t miss out!',
-    attendees: [1, 2, 3, 4, 5], // Mock attendee count
-    isPrivate: true,
-    ticketType: 'General Admission',
-    ticketPrice: 'Free'
+  useEffect(() => {
+    if (id) {
+      fetchEventDetails();
+    }
+  }, [id]);
+
+  const fetchEventDetails = async () => {
+    try {
+      console.log('🔍 Fetching event details for ID:', id);
+      
+      const { data: eventData, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          profiles:host_id (
+            username,
+            full_name
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('❌ Error fetching event details:', error);
+        Alert.alert('Error', 'Failed to load event details');
+        return;
+      }
+
+      console.log('✅ Event details fetched successfully:', eventData);
+      setEvent(eventData);
+    } catch (error) {
+      console.error('💥 Unexpected error fetching event details:', error);
+      Alert.alert('Error', 'An unexpected error occurred while loading event details');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatEventDate = (dateTime: string) => {
+    const date = new Date(dateTime);
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    return date.toLocaleDateString('en-US', options);
   };
 
   const handleRSVP = () => {
@@ -56,16 +98,40 @@ export default function EventDetailsScreen({ event }: EventDetailsProps) {
     console.log('View on map');
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6750a4" />
+          <ThemedText style={styles.loadingText}>Loading event details...</ThemedText>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!event) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>Event not found</ThemedText>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ThemedText style={styles.backButtonText}>Go Back</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Event Flyer */}
         <View style={styles.flyerContainer}>
           <View style={styles.flyer}>
-            <ThemedText style={styles.flyerText}>MINIMAL PARTY</ThemedText>
+            <ThemedText style={styles.flyerText}>{event.title.toUpperCase()}</ThemedText>
             <View style={styles.flyerCircle} />
-            <ThemedText style={styles.flyerSubtext}>DJs • BARTENDERS</ThemedText>
-            <ThemedText style={styles.flyerSubtext}>DRINKS • VIBES • LATE STYLE</ThemedText>
+            <ThemedText style={styles.flyerSubtext}>EVENT • PARTY • VIBES</ThemedText>
+            <ThemedText style={styles.flyerSubtext}>{formatEventDate(event.date_time)}</ThemedText>
           </View>
           
           {/* Top Icons */}
@@ -82,17 +148,21 @@ export default function EventDetailsScreen({ event }: EventDetailsProps) {
         <View style={styles.contentContainer}>
           {/* Event Info Block */}
           <View style={styles.eventInfoSection}>
-            <ThemedText style={styles.eventTitle}>{eventData.title}</ThemedText>
-            <ThemedText style={styles.hostInfo}>Hosted by {eventData.host}</ThemedText>
+            <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
+            <ThemedText style={styles.hostInfo}>
+              Hosted by {event.host?.full_name || event.host?.username || 'Unknown'}
+            </ThemedText>
             
             {/* Tags */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
-              {eventData.tags.map((tag, index) => (
-                <View key={index} style={styles.tag}>
-                  <ThemedText style={styles.tagText}>{tag}</ThemedText>
-                </View>
-              ))}
-            </ScrollView>
+            {event.tags && event.tags.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
+                {event.tags.map((tag, index) => (
+                  <View key={index} style={styles.tag}>
+                    <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Details Section */}
@@ -103,7 +173,7 @@ export default function EventDetailsScreen({ event }: EventDetailsProps) {
             <View style={styles.detailRow}>
               <IconSymbol size={20} name="location" color="#1C1B1F" />
               <View style={styles.detailContent}>
-                <ThemedText style={styles.detailText}>{eventData.address}</ThemedText>
+                <ThemedText style={styles.detailText}>{event.address || event.location}</ThemedText>
                 <TouchableOpacity onPress={handleViewMap}>
                   <ThemedText style={styles.linkText}>View on Map</ThemedText>
                 </TouchableOpacity>
@@ -114,7 +184,7 @@ export default function EventDetailsScreen({ event }: EventDetailsProps) {
             <View style={styles.detailRow}>
               <IconSymbol size={20} name="calendar" color="#1C1B1F" />
               <View style={styles.detailContent}>
-                <ThemedText style={styles.detailText}>{eventData.date}</ThemedText>
+                <ThemedText style={styles.detailText}>{formatEventDate(event.date_time)}</ThemedText>
               </View>
             </View>
 
@@ -122,58 +192,27 @@ export default function EventDetailsScreen({ event }: EventDetailsProps) {
             <View style={styles.detailRow}>
               <IconSymbol size={20} name="ticket" color="#1C1B1F" />
               <View style={styles.detailContent}>
-                <ThemedText style={styles.detailText}>{eventData.admission}</ThemedText>
+                <ThemedText style={styles.detailText}>
+                  {event.join_type === 'tickets' ? 'Ticketed Event' : 'RSVP Required'}
+                </ThemedText>
               </View>
-            </View>
-
-            {/* Attendees Preview */}
-            <View style={styles.attendeesContainer}>
-              {eventData.attendees.slice(0, 5).map((_, index) => (
-                <View key={index} style={[styles.attendeeAvatar, { zIndex: 5 - index }]}>
-                  <ThemedText style={styles.attendeeInitial}>A</ThemedText>
-                </View>
-              ))}
             </View>
 
             {/* Event Description */}
-            <ThemedText style={styles.description}>{eventData.description}</ThemedText>
-          </View>
-
-          {/* Tickets Section */}
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Tickets</ThemedText>
-            <View style={styles.ticketRow}>
-              <IconSymbol size={20} name="ticket" color="#1C1B1F" />
-              <View style={styles.ticketContent}>
-                <ThemedText style={styles.ticketType}>{eventData.ticketType}</ThemedText>
-                <ThemedText style={styles.ticketPrice}>{eventData.ticketPrice}</ThemedText>
-              </View>
-            </View>
-          </View>
-
-          {/* Privacy Section */}
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Privacy</ThemedText>
-            <View style={styles.privacyRow}>
-              <IconSymbol size={20} name="lock" color="#1C1B1F" />
-              <ThemedText style={styles.privacyText}>
-                {eventData.isPrivate ? 'Private' : 'Public'}
-              </ThemedText>
-            </View>
+            <ThemedText style={styles.description}>{event.description}</ThemedText>
           </View>
         </View>
       </ScrollView>
 
-      {/* RSVP Section */}
-      <View style={styles.rsvpContainer}>
-        {isGoing && (
-          <View style={styles.goingBadge}>
-            <ThemedText style={styles.goingText}>Going</ThemedText>
-          </View>
-        )}
-        <TouchableOpacity style={styles.rsvpButton} onPress={handleRSVP}>
-          <ThemedText style={styles.rsvpButtonText}>
-            {isGoing ? 'Cancel RSVP' : 'RSVP'}
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* RSVP/Ticket Button */}
+        <TouchableOpacity 
+          style={[styles.rsvpButton, isGoing && styles.rsvpButtonActive]} 
+          onPress={handleRSVP}
+        >
+          <ThemedText style={[styles.rsvpButtonText, isGoing && styles.rsvpButtonTextActive]}>
+            {isGoing ? 'Going ✓' : (event.join_type === 'tickets' ? 'Get Tickets' : 'RSVP')}
           </ThemedText>
         </TouchableOpacity>
       </View>
@@ -185,6 +224,38 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#6750a4',
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#1C1B1F',
+    marginBottom: 20,
+  },
+  backButton: {
+    backgroundColor: '#6750a4',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -263,19 +334,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   tag: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 999,
+    backgroundColor: '#f3edff',
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
     marginRight: 8,
   },
   tagText: {
-    fontSize: 14,
-    color: '#1C1B1F',
+    fontSize: 12,
+    color: '#6750a4',
     fontWeight: '500',
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
@@ -289,8 +360,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailContent: {
-    marginLeft: 12,
     flex: 1,
+    marginLeft: 12,
   },
   detailText: {
     fontSize: 16,
@@ -300,90 +371,38 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     color: '#7B3EFF',
-    fontWeight: '500',
-  },
-  attendeesContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    marginLeft: 32,
-  },
-  attendeeAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#7B3EFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: -8,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  attendeeInitial: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    textDecorationLine: 'underline',
   },
   description: {
     fontSize: 16,
     color: '#1C1B1F',
     lineHeight: 24,
-    marginLeft: 32,
+    marginTop: 16,
   },
-  ticketRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ticketContent: {
-    marginLeft: 12,
-  },
-  ticketType: {
-    fontSize: 16,
-    color: '#1C1B1F',
-    fontWeight: '500',
-  },
-  ticketPrice: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  privacyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  privacyText: {
-    fontSize: 16,
-    color: '#1C1B1F',
-    marginLeft: 12,
-  },
-  rsvpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  bottomSection: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
   },
-  goingBadge: {
-    backgroundColor: '#F0F0F0',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  goingText: {
-    fontSize: 14,
-    color: '#1C1B1F',
-    fontWeight: '500',
-  },
   rsvpButton: {
     backgroundColor: '#7B3EFF',
-    borderRadius: 999,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  rsvpButtonActive: {
+    backgroundColor: '#E8F5E8',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
   },
   rsvpButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
     color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  rsvpButtonTextActive: {
+    color: '#4CAF50',
   },
 });
