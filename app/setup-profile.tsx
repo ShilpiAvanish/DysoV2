@@ -100,10 +100,11 @@ export default function SetupProfileScreen() {
       Alert.alert('Success', 'Profile setup complete!', [
         {
           text: 'OK',
-          onPress: () => router.replace('/(tabs)')
+          onPress: () => {
+            router.replace('/(tabs)');
+          }
         }
       ]);
-
     } catch (error) {
       console.error('Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
