@@ -86,6 +86,16 @@ export default function HomeScreen() {
     return date.toLocaleDateString('en-US', options);
   };
 
+  const formatEventTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    const options: Intl.DateTimeFormatOptions = {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    return date.toLocaleTimeString('en-US', options);
+  };
+
   const getEventImageColor = (index: number) => {
     const colors = ['#1a1a2e', '#e91e63', '#0a0a0a', '#8bc34a', '#ff9800', '#9c27b0', '#2196f3'];
     return colors[index % colors.length];
@@ -96,28 +106,78 @@ export default function HomeScreen() {
     return emojis[index % emojis.length];
   };
 
+  const getHostDisplayName = (event: Event) => {
+    if (event.host?.full_name) {
+      return event.host.full_name;
+    }
+    if (event.host?.username) {
+      return event.host.username;
+    }
+    return 'Anonymous Host';
+  };
+
+  const getHostInitials = (event: Event) => {
+    const name = getHostDisplayName(event);
+    if (name === 'Anonymous Host') return 'AH';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   const renderEventCard = ({ item, index }: { item: Event; index: number }) => (
-    <TouchableOpacity style={styles.eventCard} onPress={() => router.push(`/event/${item.id}`)}>
+    <TouchableOpacity 
+      style={styles.eventCard} 
+      onPress={() => router.push(`/event/${item.id}`)}
+      activeOpacity={0.8}
+    >
       <View style={[styles.eventImage, { backgroundColor: getEventImageColor(index) }]}>
-        <ThemedText style={styles.eventImageText}>
-          {getEventImageContent(item.title, index)}
-        </ThemedText>
+        <View style={styles.eventImageOverlay}>
+          <ThemedText style={styles.eventImageText}>
+            {getEventImageContent(item.title, index)}
+          </ThemedText>
+        </View>
       </View>
       <View style={styles.eventInfo}>
-        <ThemedText type="defaultSemiBold" style={styles.eventTitle}>
-          {item.title}
+        <ThemedText style={styles.eventTitle}>
+          {item.title.charAt(0).toUpperCase() + item.title.slice(1)}
         </ThemedText>
-        <ThemedText style={styles.eventDetails}>
-          {formatEventDate(item.date_time)} · {item.location}
-        </ThemedText>
-        <ThemedText style={styles.eventHost}>
-          Hosted by {item.host?.full_name || item.host?.username || 'Unknown'}
-        </ThemedText>
+        
+        <View style={styles.eventDateTimeContainer}>
+          <View style={styles.dateTimeRow}>
+            <IconSymbol size={14} name="calendar" color="#7B61FF" />
+            <ThemedText style={styles.eventDate}>
+              {formatEventDate(item.date_time)}
+            </ThemedText>
+          </View>
+          <View style={styles.dateTimeRow}>
+            <IconSymbol size={14} name="clock" color="#7B61FF" />
+            <ThemedText style={styles.eventTime}>
+              {formatEventTime(item.date_time)}
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.locationRow}>
+          <IconSymbol size={14} name="location" color="#7B61FF" />
+          <ThemedText style={styles.eventLocation}>
+            {item.location}
+          </ThemedText>
+        </View>
+
+        <View style={styles.hostRow}>
+          <View style={styles.hostAvatar}>
+            <ThemedText style={styles.hostInitials}>
+              {getHostInitials(item)}
+            </ThemedText>
+          </View>
+          <ThemedText style={styles.eventHost}>
+            Hosted by {getHostDisplayName(item)}
+          </ThemedText>
+        </View>
+
         {item.tags && item.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {item.tags.slice(0, 2).map((tag, tagIndex) => (
               <View key={tagIndex} style={styles.tag}>
-                <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                <ThemedText style={styles.tagText}>#{tag}</ThemedText>
               </View>
             ))}
           </View>
@@ -143,49 +203,67 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerIcon}>
-          <IconSymbol size={24} name="location" color="#fff" />
+          <IconSymbol size={24} name="location" color="#7B61FF" />
         </TouchableOpacity>
         <ThemedText style={styles.headerTitle}>Events</ThemedText>
         <TouchableOpacity style={styles.headerIcon} onPress={fetchEvents}>
-          <IconSymbol size={24} name="arrow.clockwise" color="#1a1a1a" />
+          <IconSymbol size={24} name="arrow.clockwise" color="#7B61FF" />
         </TouchableOpacity>
       </View>
 
-      {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersContainer}>
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterButton,
-              selectedFilter === filter && styles.filterButtonSelected
-            ]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <View style={styles.filterContent}>
-              {filter === 'Distance' && <IconSymbol size={16} name="location" color={selectedFilter === filter ? "#6750a4" : "#888"} />}
-              {filter === 'Trending' && <IconSymbol size={16} name="chart.line.uptrend.xyaxis" color={selectedFilter === filter ? "#6750a4" : "#888"} />}
-              {filter === 'Tonight' && <IconSymbol size={16} name="moon" color={selectedFilter === filter ? "#6750a4" : "#888"} />}
-              <ThemedText
-                style={[
-                  styles.filterText,
-                  { 
-                    color: selectedFilter === filter ? "#6750a4" : "#AAA",
-                    fontWeight: selectedFilter === filter ? '600' : '400'
-                  }
-                ]}
-              >
-                {filter}
-              </ThemedText>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Modern Filters */}
+      <View style={styles.filtersContainer}>
+        <View style={styles.filterSegmentedControl}>
+          {filters.map((filter) => (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterButton,
+                selectedFilter === filter && styles.filterButtonSelected
+              ]}
+              onPress={() => setSelectedFilter(filter)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.filterContent}>
+                {filter === 'Distance' && (
+                  <IconSymbol 
+                    size={16} 
+                    name="location" 
+                    color={selectedFilter === filter ? "#FFFFFF" : "#AAA"} 
+                  />
+                )}
+                {filter === 'Trending' && (
+                  <IconSymbol 
+                    size={16} 
+                    name="chart.line.uptrend.xyaxis" 
+                    color={selectedFilter === filter ? "#FFFFFF" : "#AAA"} 
+                  />
+                )}
+                {filter === 'Tonight' && (
+                  <IconSymbol 
+                    size={16} 
+                    name="moon" 
+                    color={selectedFilter === filter ? "#FFFFFF" : "#AAA"} 
+                  />
+                )}
+                <ThemedText
+                  style={[
+                    styles.filterText,
+                    selectedFilter === filter && styles.filterTextSelected
+                  ]}
+                >
+                  {filter}
+                </ThemedText>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* Loading State */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6750a4" />
+          <ActivityIndicator size="large" color="#7B61FF" />
           <ThemedText style={styles.loadingText}>Loading events...</ThemedText>
         </View>
       ) : (
@@ -208,7 +286,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
   },
   header: {
     flexDirection: 'row',
@@ -217,42 +295,54 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
   },
   headerIcon: {
-    width: 24,
-    height: 24,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: '#F8F8F8',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1B1F',
   },
   filtersContainer: {
     paddingHorizontal: 16,
-    marginBottom: 20,
-  },
-  filterButton: {
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    borderRadius: 999,
-    marginHorizontal: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  filterSegmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    padding: 4,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   filterButtonSelected: {
-    backgroundColor: '#f3edff',
-    borderColor: '#6750a4',
+    backgroundColor: '#7B61FF',
+    shadowColor: '#7B61FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   filterContent: {
     flexDirection: 'row',
@@ -261,7 +351,12 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: '500',
+    color: '#AAA',
+  },
+  filterTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,
@@ -271,36 +366,47 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: '#6750a4',
+    color: '#7B61FF',
     fontSize: 16,
+    fontWeight: '500',
   },
   eventsList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     paddingBottom: 100,
   },
   eventCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 24,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
   },
   eventImage: {
-    height: 200,
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    position: 'relative',
+  },
+  eventImageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   eventImageText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 48,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -310,36 +416,80 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 6,
+    fontWeight: '700',
+    color: '#1C1B1F',
+    marginBottom: 12,
+    lineHeight: 24,
   },
-  eventDetails: {
-    fontSize: 14,
-    color: '#6750a4',
+  eventDateTimeContainer: {
+    marginBottom: 8,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
-    fontWeight: '400',
+  },
+  eventDate: {
+    fontSize: 14,
+    color: '#7B61FF',
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  eventTime: {
+    fontSize: 14,
+    color: '#7B61FF',
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  eventLocation: {
+    fontSize: 14,
+    color: '#7B61FF',
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  hostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  hostAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3EDFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  hostInitials: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7B61FF',
   },
   eventHost: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 8,
-    fontWeight: '400',
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
   },
   tagsContainer: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
   },
   tag: {
-    backgroundColor: '#f3edff',
+    backgroundColor: '#F3EDFF',
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   tagText: {
-    fontSize: 10,
-    color: '#6750a4',
-    fontWeight: '500',
+    fontSize: 12,
+    color: '#7B61FF',
+    fontWeight: '600',
   },
   emptyStateContainer: {
     flex: 1,
@@ -351,7 +501,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#f3edff',
+    backgroundColor: '#F3EDFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -361,13 +511,13 @@ const styles = StyleSheet.create({
   },
   noEventsText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontWeight: '700',
+    color: '#1C1B1F',
     marginBottom: 8,
   },
   supportText: {
     fontSize: 14,
-    color: '#888',
+    color: '#666666',
     textAlign: 'center',
     paddingHorizontal: 40,
     lineHeight: 20,

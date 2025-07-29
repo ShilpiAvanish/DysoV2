@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { supabase } from '@/lib/supabase';
@@ -14,8 +14,6 @@ export default function SetupProfileScreen() {
   const [birthday, setBirthday] = useState('');
   const [campus, setCampus] = useState('UT Austin'); // Set default campus to UT Austin
   const [isLoading, setIsLoading] = useState(false); // Loading state
-
-
 
   const handleUpload = () => {
     // Handle photo upload
@@ -159,10 +157,10 @@ export default function SetupProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Navigation Bar */}
+        {/* Modern Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <IconSymbol size={20} name="chevron.left" color="#007AFF" />
+            <IconSymbol size={20} name="chevron.left" color="#4F70FF" />
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         </View>
@@ -173,16 +171,17 @@ export default function SetupProfileScreen() {
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Profile Image Section */}
+          {/* Modern Profile Image Section */}
           <View style={styles.profileImageSection}>
-            <View style={styles.avatarPlaceholder}>
-              <View style={styles.avatarIcon}>
-                <IconSymbol size={40} name="person.fill" color="#000000" />
+            <TouchableOpacity style={styles.avatarContainer} onPress={handleUpload}>
+              <View style={styles.avatarPlaceholder}>
+                <IconSymbol size={32} name="person.fill" color="#CCCCCC" />
               </View>
-            </View>
-            <View style={styles.photoButtonsContainer}>
-              {/* Remove Upload/Take Photo buttons */}
-            </View>
+              <View style={styles.avatarOverlay}>
+                <IconSymbol size={20} name="camera" color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.uploadText}>Upload Photo</Text>
           </View>
 
           {/* Input Fields */}
@@ -192,7 +191,7 @@ export default function SetupProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your username"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#999999"
                 value={username}
                 onChangeText={setUsername}
               />
@@ -202,8 +201,8 @@ export default function SetupProfileScreen() {
               <Text style={styles.label}>Name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your name"
-                placeholderTextColor="#A0A0A0"
+                placeholder="Enter your full name"
+                placeholderTextColor="#999999"
                 value={name}
                 onChangeText={setName}
               />
@@ -213,8 +212,8 @@ export default function SetupProfileScreen() {
               <Text style={styles.label}>Instagram Handle</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your handle"
-                placeholderTextColor="#A0A0A0"
+                placeholder="@yourhandle"
+                placeholderTextColor="#999999"
                 value={instagramHandle}
                 onChangeText={setInstagramHandle}
               />
@@ -224,17 +223,17 @@ export default function SetupProfileScreen() {
               <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, styles.bioInput]}
-                placeholder=""
-                placeholderTextColor="#A0A0A0"
+                placeholder="Tell us about yourself..."
+                placeholderTextColor="#999999"
                 value={bio}
                 onChangeText={setBio}
                 multiline
-                numberOfLines={4}
+                numberOfLines={3}
                 textAlignVertical="top"
               />
             </View>
 
-            {/* Gender Selection */}
+            {/* Enhanced Gender Selection */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Gender</Text>
               <View style={styles.genderContainer}>
@@ -246,6 +245,7 @@ export default function SetupProfileScreen() {
                       selectedGender === gender ? styles.genderButtonActive : styles.genderButtonInactive
                     ]}
                     onPress={() => setSelectedGender(gender)}
+                    activeOpacity={0.8}
                   >
                     <Text
                       style={[
@@ -260,45 +260,58 @@ export default function SetupProfileScreen() {
               </View>
             </View>
 
-            {/* Birthday */}
+            {/* Enhanced Birthday Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Birthday</Text>
               <View style={styles.dateInputContainer}>
                 <TextInput
                   style={[styles.input, styles.dateInput]}
                   placeholder="MM/DD/YYYY"
-                  placeholderTextColor="#A0A0A0"
+                  placeholderTextColor="#999999"
                   value={birthday}
                   onChangeText={setBirthday}
                 />
                 <TouchableOpacity style={styles.calendarIcon}>
-                  <IconSymbol size={20} name="calendar" color="#7B3EFF" />
+                  <IconSymbol size={20} name="calendar" color="#7B61FF" />
                 </TouchableOpacity>
               </View>
               <Text style={styles.helpText}>Must be 18 or older to use this app</Text>
             </View>
 
-            {/* Campus */}
+            {/* Enhanced Campus Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Campus</Text>
-              <TextInput
-                style={styles.input}
-                value="UT Austin"
-                editable={false} // Make it non-editable
-              />
+              <View style={styles.campusInputContainer}>
+                <TextInput
+                  style={[styles.input, styles.campusInput]}
+                  value={campus}
+                  editable={false}
+                />
+                <TouchableOpacity style={styles.dropdownIcon}>
+                  <IconSymbol size={20} name="chevron.down" color="#7B61FF" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </ScrollView>
       </View>
 
-      {/* Complete Button */}
+      {/* Modern Complete Button */}
       <View style={styles.buttonSection}>
         <TouchableOpacity 
-          style={[styles.completeButton, { opacity: (isFormValid && !isLoading) ? 1 : 0.6 }]} 
+          style={[
+            styles.completeButton, 
+            { opacity: (isFormValid && !isLoading) ? 1 : 0.6 }
+          ]} 
           onPress={handleComplete} 
           disabled={!isFormValid || isLoading}
+          activeOpacity={0.8}
         >
-          <Text style={styles.completeButtonText}>{isLoading ? "Saving..." : "Complete →"}</Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.completeButtonText}>Complete →</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -308,16 +321,17 @@ export default function SetupProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
+    paddingTop: 16,
   },
   backButton: {
     flexDirection: 'row',
@@ -325,11 +339,12 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#4F70FF',
     marginLeft: 4,
+    fontWeight: '400',
   },
   titleSection: {
-    marginBottom: 32,
+    marginBottom: 40,
   },
   title: {
     fontSize: 24,
@@ -341,7 +356,11 @@ const styles = StyleSheet.create({
   },
   profileImageSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
   },
   avatarPlaceholder: {
     width: 100,
@@ -351,28 +370,33 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  avatarIcon: {
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#7B61FF',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  photoButtonsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  photoButton: {
-    borderWidth: 1,
-    borderColor: '#7B3EFF',
-    borderRadius: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-  },
-  photoButtonText: {
+  uploadText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#7B3EFF',
+    color: '#666666',
+    fontWeight: '500',
   },
   inputSection: {
     marginBottom: 20,
@@ -388,16 +412,21 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D0C2FF',
+    borderColor: '#E0E0E0',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
     fontSize: 16,
     color: '#1C1B1F',
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   bioInput: {
-    height: 100,
+    height: 80,
     textAlignVertical: 'top',
   },
   genderContainer: {
@@ -406,20 +435,30 @@ const styles = StyleSheet.create({
   },
   genderButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   genderButtonActive: {
-    backgroundColor: '#7B3EFF',
-    borderColor: '#7B3EFF',
+    backgroundColor: '#7B61FF',
+    borderColor: '#7B61FF',
+    shadowColor: '#7B61FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   genderButtonInactive: {
-    backgroundColor: 'transparent',
-    borderColor: '#7B3EFF',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E0E0E0',
   },
   genderButtonText: {
     fontSize: 16,
@@ -429,7 +468,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   genderButtonTextInactive: {
-    color: '#7B3EFF',
+    color: '#7B61FF',
   },
   dateInputContainer: {
     position: 'relative',
@@ -440,39 +479,49 @@ const styles = StyleSheet.create({
   calendarIcon: {
     position: 'absolute',
     right: 16,
-    top: 16,
+    top: 14,
   },
-  dropdownContainer: {
+  campusInputContainer: {
     position: 'relative',
   },
-  dropdownInput: {
+  campusInput: {
     paddingRight: 50,
+    backgroundColor: '#F8F8F8',
+    borderColor: '#E0E0E0',
   },
   dropdownIcon: {
     position: 'absolute',
     right: 16,
-    top: 16,
-    transform: [{ rotate: '90deg' }],
+    top: 14,
   },
   helpText: {
     fontSize: 12,
-    color: '#7B3EFF',
-    marginTop: 4,
+    color: '#7B61FF',
+    marginTop: 6,
+    fontWeight: '500',
   },
   buttonSection: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingBottom: 34,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
   completeButton: {
-    backgroundColor: '#7B3EFF',
-    borderRadius: 14,
-    height: 56,
+    backgroundColor: '#7B61FF',
+    borderRadius: 16,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#7B61FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   completeButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

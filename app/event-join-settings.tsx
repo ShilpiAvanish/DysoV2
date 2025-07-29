@@ -31,7 +31,7 @@ export default function EventJoinSettingsScreen() {
 
   const handleAddTicket = () => {
     // Preserve event parameters when navigating to add-ticket
-    const eventParams = {};
+    const eventParams: any = {};
     if (params.eventTitle && params.eventTitle !== 'undefined') {
       eventParams.eventTitle = params.eventTitle;
     }
@@ -57,7 +57,7 @@ export default function EventJoinSettingsScreen() {
     const ticket = tickets.find(t => t.id === ticketId);
     if (ticket) {
       // Preserve event parameters when navigating to add-ticket
-      const eventParams = {};
+      const eventParams: any = {};
       if (params.eventTitle && params.eventTitle !== 'undefined') {
         eventParams.eventTitle = params.eventTitle;
       }
@@ -130,7 +130,7 @@ export default function EventJoinSettingsScreen() {
           }
           
           // Clear the ticket params but preserve event params
-          const eventParams = {};
+          const eventParams: any = {};
           if (params.eventTitle && params.eventTitle !== 'undefined') {
             eventParams.eventTitle = params.eventTitle;
           }
@@ -326,10 +326,10 @@ export default function EventJoinSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Modern Back Button */}
+      <View style={styles.backContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <IconSymbol size={20} name="chevron.left" color="#007AFF" />
+          <IconSymbol size={20} name="chevron.left" color="#7B61FF" />
           <ThemedText style={styles.backText}>Back</ThemedText>
         </TouchableOpacity>
       </View>
@@ -339,27 +339,28 @@ export default function EventJoinSettingsScreen() {
         <View style={styles.progressBar}>
           <View style={styles.progressFill} />
         </View>
+        <ThemedText style={styles.progressText}>Step 2 of 2</ThemedText>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Section Header */}
-        <View style={styles.section}>
+        {/* Header Text Section */}
+        <View style={styles.headerSection}>
           <ThemedText style={styles.title}>How should people join your event?</ThemedText>
           <ThemedText style={styles.subtitle}>
             Choose how attendees will access your event. Select RSVP for free events or Tickets for paid events.
           </ThemedText>
         </View>
 
-        {/* Selection Toggle */}
-        <View style={styles.section}>
+        {/* Modern RSVP/Tickets Toggle */}
+        <View style={styles.toggleSection}>
           <View style={styles.toggleContainer}>
             <TouchableOpacity
               style={[
                 styles.toggleButton,
-                styles.leftToggle,
                 selectedOption === 'RSVP' ? styles.toggleButtonActive : styles.toggleButtonInactive
               ]}
               onPress={() => setSelectedOption('RSVP')}
+              activeOpacity={0.8}
             >
               <ThemedText style={[
                 styles.toggleText,
@@ -371,10 +372,10 @@ export default function EventJoinSettingsScreen() {
             <TouchableOpacity
               style={[
                 styles.toggleButton,
-                styles.rightToggle,
                 selectedOption === 'Tickets' ? styles.toggleButtonActive : styles.toggleButtonInactive
               ]}
               onPress={() => setSelectedOption('Tickets')}
+              activeOpacity={0.8}
             >
               <ThemedText style={[
                 styles.toggleText,
@@ -388,7 +389,7 @@ export default function EventJoinSettingsScreen() {
 
         {/* Ticket Container */}
         {selectedOption === 'Tickets' && (
-          <View style={styles.section}>
+          <View style={styles.ticketsSection}>
             {/* Tickets List Container */}
             <View style={styles.ticketsListContainer}>
               {/* Display existing tickets stacked vertically */}
@@ -443,17 +444,18 @@ export default function EventJoinSettingsScreen() {
               ))}
             </View>
 
-            {/* Add Ticket Button - always at the bottom */}
-            <View style={styles.ticketContainer}>
-              <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket}>
-                <ThemedText style={styles.addTicketText}>Add Ticket +</ThemedText>
+            {/* Modern Add Ticket Button */}
+            <View style={styles.addTicketContainer}>
+              <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket} activeOpacity={0.8}>
+                <IconSymbol size={20} name="plus.circle" color="#FFFFFF" />
+                <ThemedText style={styles.addTicketText}>Add Ticket</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {/* Toggle Switches */}
-        <View style={styles.section}>
+        {/* Modern Switches */}
+        <View style={styles.switchesSection}>
           <View style={styles.switchRow}>
             <ThemedText style={styles.switchLabel}>Require approval for guests</ThemedText>
             <Switch
@@ -476,14 +478,15 @@ export default function EventJoinSettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Create Event Button */}
+      {/* Modern Create Event Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={[styles.continueButton, { opacity: isLoading ? 0.6 : 1 }]} 
+          style={[styles.createButton, { opacity: isLoading ? 0.6 : 1 }]} 
           onPress={handleCreateEvent}
           disabled={isLoading}
+          activeOpacity={0.8}
         >
-          <ThemedText style={styles.continueButtonText}>
+          <ThemedText style={styles.createButtonText}>
             {isLoading ? 'Creating Event...' : 'Create Event'}
           </ThemedText>
         </TouchableOpacity>
@@ -495,11 +498,9 @@ export default function EventJoinSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  backContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
@@ -507,76 +508,108 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#7B61FF',
+    fontWeight: '600',
     marginLeft: 4,
   },
   progressContainer: {
     paddingHorizontal: 20,
-    marginBottom: 32,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
   },
   progressBar: {
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 3,
     overflow: 'hidden',
+    marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    width: '50%',
-    backgroundColor: '#9F59FF',
-    borderRadius: 2,
+    width: '100%',
+    backgroundColor: '#7B3EFF',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,
     paddingHorizontal: 20,
   },
-  section: {
-    marginBottom: 32,
+  headerSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#1C1B1F',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#666666',
+    fontSize: 16,
+    color: '#999999',
+    fontWeight: '400',
     lineHeight: 22,
+  },
+  toggleSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#E0E0E0',
-    borderRadius: 50,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 999,
     padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 24,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  leftToggle: {
-    borderTopLeftRadius: 46,
-    borderBottomLeftRadius: 46,
-  },
-  rightToggle: {
-    borderTopRightRadius: 46,
-    borderBottomRightRadius: 46,
-  },
   toggleButtonActive: {
     backgroundColor: '#7B3EFF',
+    shadowColor: '#7B3EFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   toggleButtonInactive: {
     backgroundColor: 'transparent',
   },
   toggleText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   toggleTextActive: {
     color: '#FFFFFF',
@@ -584,43 +617,27 @@ const styles = StyleSheet.create({
   toggleTextInactive: {
     color: '#1C1B1F',
   },
-  ticketsListContainer: {
-    marginBottom: 16,
-  },
-  ticketContainer: {
-    backgroundColor: '#F5F5F5',
+  ticketsSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 80,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  addTicketButton: {
-    backgroundColor: '#888888',
-    borderRadius: 25,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  addTicketText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  ticketsListContainer: {
+    marginBottom: 20,
   },
   ticketCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F8F8',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   ticketCardHeader: {
     flexDirection: 'row',
@@ -633,7 +650,7 @@ const styles = StyleSheet.create({
   },
   ticketCardName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1C1B1F',
     marginBottom: 4,
   },
@@ -649,7 +666,7 @@ const styles = StyleSheet.create({
   ticketActionButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   ticketCardDetails: {
     gap: 8,
@@ -669,33 +686,79 @@ const styles = StyleSheet.create({
     color: '#1C1B1F',
     fontWeight: '600',
   },
+  addTicketContainer: {
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTicketButton: {
+    backgroundColor: '#7B3EFF',
+    borderRadius: 25,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#7B3EFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addTicketText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  switchesSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
   },
   switchLabel: {
     fontSize: 16,
     color: '#1C1B1F',
-    fontWeight: '500',
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 16,
   },
   buttonContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
     paddingTop: 16,
     backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
-  continueButton: {
+  createButton: {
     backgroundColor: '#7B3EFF',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#7B3EFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  continueButtonText: {
+  createButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });

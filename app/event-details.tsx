@@ -85,6 +85,32 @@ export default function EventDetailsScreen() {
     return date.toLocaleDateString('en-US', options);
   };
 
+  const formatEventTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    const options: Intl.DateTimeFormatOptions = {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    return date.toLocaleTimeString('en-US', options);
+  };
+
+  const getHostDisplayName = (event: Event) => {
+    if (event.host?.full_name) {
+      return event.host.full_name;
+    }
+    if (event.host?.username) {
+      return event.host.username;
+    }
+    return 'Anonymous Host';
+  };
+
+  const getHostInitials = (event: Event) => {
+    const name = getHostDisplayName(event);
+    if (name === 'Anonymous Host') return 'AH';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   const handleRSVP = () => {
     setIsGoing(!isGoing);
     console.log(isGoing ? 'Removed RSVP' : 'RSVP confirmed');
@@ -102,7 +128,7 @@ export default function EventDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6750a4" />
+          <ActivityIndicator size="large" color="#7B61FF" />
           <ThemedText style={styles.loadingText}>Loading event details...</ThemedText>
         </View>
       </SafeAreaView>
@@ -125,95 +151,165 @@ export default function EventDetailsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Event Flyer */}
-        <View style={styles.flyerContainer}>
-          <View style={styles.flyer}>
-            <ThemedText style={styles.flyerText}>{event.title.toUpperCase()}</ThemedText>
-            <View style={styles.flyerCircle} />
-            <ThemedText style={styles.flyerSubtext}>EVENT • PARTY • VIBES</ThemedText>
-            <ThemedText style={styles.flyerSubtext}>{formatEventDate(event.date_time)}</ThemedText>
+        {/* Modern Event Header */}
+        <View style={styles.headerContainer}>
+          {/* Flyer Image/Gradient Placeholder */}
+          <View style={styles.flyerImage}>
+            <View style={styles.flyerGradient} />
+            <View style={styles.flyerOverlay}>
+              <ThemedText style={styles.flyerEmoji}>🎉</ThemedText>
+            </View>
           </View>
           
-          {/* Top Icons */}
+          {/* Top Navigation Icons */}
           <View style={styles.topIcons}>
             <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
-              <IconSymbol size={24} name="chevron.left" color="#1C1B1F" />
+              <IconSymbol size={24} name="chevron.left" color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={handleShare}>
-              <IconSymbol size={24} name="square.and.arrow.up" color="#1C1B1F" />
+              <IconSymbol size={24} name="square.and.arrow.up" color="#FFFFFF" />
             </TouchableOpacity>
+          </View>
+
+          {/* Event Title */}
+          <View style={styles.titleContainer}>
+            <ThemedText style={styles.eventTitle}>
+              {event.title.toUpperCase()}
+            </ThemedText>
+            
+            {/* Event Type Badges */}
+            <View style={styles.badgesContainer}>
+              <View style={styles.badge}>
+                <ThemedText style={styles.badgeText}>EVENT</ThemedText>
+              </View>
+              <View style={styles.badge}>
+                <ThemedText style={styles.badgeText}>PARTY</ThemedText>
+              </View>
+              <View style={styles.badge}>
+                <ThemedText style={styles.badgeText}>VIBES</ThemedText>
+              </View>
+            </View>
+
+            <ThemedText style={styles.eventDate}>
+              {formatEventDate(event.date_time)}
+            </ThemedText>
           </View>
         </View>
 
         <View style={styles.contentContainer}>
-          {/* Event Info Block */}
-          <View style={styles.eventInfoSection}>
-            <ThemedText style={styles.eventTitle}>{event.title}</ThemedText>
-            <ThemedText style={styles.hostInfo}>
-              Hosted by {event.host?.full_name || event.host?.username || 'Unknown'}
-            </ThemedText>
-            
-            {/* Tags */}
-            {event.tags && event.tags.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsContainer}>
+          {/* Host Section */}
+          <View style={styles.hostSection}>
+            <View style={styles.hostRow}>
+              <View style={styles.hostAvatar}>
+                <ThemedText style={styles.hostInitials}>
+                  {getHostInitials(event)}
+                </ThemedText>
+              </View>
+              <View style={styles.hostInfo}>
+                <ThemedText style={styles.hostLabel}>Hosted by</ThemedText>
+                <ThemedText style={styles.hostName}>
+                  {getHostDisplayName(event)}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+
+          {/* Event Tags */}
+          {event.tags && event.tags.length > 0 && (
+            <View style={styles.tagsSection}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {event.tags.map((tag, index) => (
                   <View key={index} style={styles.tag}>
-                    <ThemedText style={styles.tagText}>{tag}</ThemedText>
+                    <ThemedText style={styles.tagText}>#{tag}</ThemedText>
                   </View>
                 ))}
               </ScrollView>
-            )}
-          </View>
+            </View>
+          )}
 
           {/* Details Section */}
-          <View style={styles.section}>
+          <View style={styles.detailsSection}>
             <ThemedText style={styles.sectionTitle}>Details</ThemedText>
             
-            {/* Address */}
-            <View style={styles.detailRow}>
-              <IconSymbol size={20} name="location" color="#1C1B1F" />
-              <View style={styles.detailContent}>
-                <ThemedText style={styles.detailText}>{event.address || event.location}</ThemedText>
-                <TouchableOpacity onPress={handleViewMap}>
-                  <ThemedText style={styles.linkText}>View on Map</ThemedText>
-                </TouchableOpacity>
+            {/* Location Card */}
+            <View style={styles.detailCard}>
+              <View style={styles.detailHeader}>
+                <IconSymbol size={20} name="location" color="#7B61FF" />
+                <ThemedText style={styles.detailLabel}>Location</ThemedText>
+              </View>
+              <ThemedText style={styles.detailText}>
+                {event.address || event.location}
+              </ThemedText>
+              <TouchableOpacity style={styles.mapButton} onPress={handleViewMap}>
+                <IconSymbol size={16} name="map" color="#7B61FF" />
+                <ThemedText style={styles.mapButtonText}>View on Map</ThemedText>
+              </TouchableOpacity>
+            </View>
+
+            {/* Date & Time Card */}
+            <View style={styles.detailCard}>
+              <View style={styles.detailHeader}>
+                <IconSymbol size={20} name="calendar" color="#7B61FF" />
+                <ThemedText style={styles.detailLabel}>Date & Time</ThemedText>
+              </View>
+              <View style={styles.dateTimeInfo}>
+                <View style={styles.dateTimeRow}>
+                  <IconSymbol size={16} name="calendar" color="#666666" />
+                  <ThemedText style={styles.dateTimeText}>
+                    {formatEventDate(event.date_time)}
+                  </ThemedText>
+                </View>
+                <View style={styles.dateTimeRow}>
+                  <IconSymbol size={16} name="clock" color="#666666" />
+                  <ThemedText style={styles.dateTimeText}>
+                    {formatEventTime(event.date_time)}
+                  </ThemedText>
+                </View>
               </View>
             </View>
 
-            {/* Date & Time */}
-            <View style={styles.detailRow}>
-              <IconSymbol size={20} name="calendar" color="#1C1B1F" />
-              <View style={styles.detailContent}>
-                <ThemedText style={styles.detailText}>{formatEventDate(event.date_time)}</ThemedText>
+            {/* Event Type Card */}
+            <View style={styles.detailCard}>
+              <View style={styles.detailHeader}>
+                <IconSymbol size={20} name="ticket" color="#7B61FF" />
+                <ThemedText style={styles.detailLabel}>Event Type</ThemedText>
               </View>
-            </View>
-
-            {/* Admission */}
-            <View style={styles.detailRow}>
-              <IconSymbol size={20} name="ticket" color="#1C1B1F" />
-              <View style={styles.detailContent}>
-                <ThemedText style={styles.detailText}>
-                  {event.join_type === 'tickets' ? 'Ticketed Event' : 'RSVP Required'}
+              <View style={styles.eventTypeBadge}>
+                <IconSymbol 
+                  size={16} 
+                  name={event.join_type === 'tickets' ? "ticket" : "person.2"} 
+                  color="#FFFFFF" 
+                />
+                <ThemedText style={styles.eventTypeText}>
+                  {event.join_type === 'tickets' ? '🎟 Ticketed' : '📝 Free RSVP'}
                 </ThemedText>
               </View>
             </View>
 
             {/* Event Description */}
-            <ThemedText style={styles.description}>{event.description}</ThemedText>
+            {event.description && (
+              <View style={styles.descriptionCard}>
+                <ThemedText style={styles.descriptionLabel}>About this event</ThemedText>
+                <ThemedText style={styles.description}>{event.description}</ThemedText>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
 
-      {/* Bottom Section */}
+      {/* Modern Bottom Section */}
       <View style={styles.bottomSection}>
-        {/* RSVP/Ticket Button */}
         <TouchableOpacity 
-          style={[styles.rsvpButton, isGoing && styles.rsvpButtonActive]} 
+          style={[styles.actionButton, isGoing && styles.actionButtonActive]} 
           onPress={handleRSVP}
+          activeOpacity={0.8}
         >
-          <ThemedText style={[styles.rsvpButtonText, isGoing && styles.rsvpButtonTextActive]}>
+          <ThemedText style={[styles.actionButtonText, isGoing && styles.actionButtonTextActive]}>
             {isGoing ? 'Going ✓' : (event.join_type === 'tickets' ? 'Get Tickets' : 'RSVP')}
           </ThemedText>
+          {event.join_type === 'tickets' && (
+            <ThemedText style={styles.priceText}>Starting at $10</ThemedText>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -223,7 +319,7 @@ export default function EventDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
   },
   loadingContainer: {
     flex: 1,
@@ -232,8 +328,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: '#6750a4',
+    color: '#7B61FF',
     fontSize: 16,
+    fontWeight: '500',
   },
   errorContainer: {
     flex: 1,
@@ -247,10 +344,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   backButton: {
-    backgroundColor: '#6750a4',
+    backgroundColor: '#7B61FF',
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   backButtonText: {
     color: '#FFFFFF',
@@ -260,40 +357,29 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  flyerContainer: {
-    height: 400,
+  headerContainer: {
     position: 'relative',
   },
-  flyer: {
+  flyerImage: {
+    height: 300,
+    position: 'relative',
+  },
+  flyerGradient: {
     flex: 1,
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#7B61FF',
+  },
+  flyerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
-  flyerText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1C1B1F',
-    marginBottom: 20,
-  },
-  flyerCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#1C1B1F',
-    marginBottom: 20,
-  },
-  flyerSubtext: {
-    fontSize: 10,
-    color: '#1C1B1F',
-    textAlign: 'center',
-    marginBottom: 4,
+  flyerEmoji: {
+    fontSize: 64,
   },
   topIcons: {
     position: 'absolute',
@@ -307,102 +393,245 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 40,
     height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  titleContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  eventTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1C1B1F',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  badge: {
+    backgroundColor: '#F3EDFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  badgeText: {
+    fontSize: 12,
+    color: '#7B61FF',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  eventDate: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
   },
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  eventInfoSection: {
-    marginBottom: 32,
+  hostSection: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  eventTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1B1F',
-    marginBottom: 8,
+  hostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hostAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3EDFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  hostInitials: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#7B61FF',
   },
   hostInfo: {
-    fontSize: 16,
-    color: '#7B3EFF',
-    marginBottom: 16,
+    flex: 1,
   },
-  tagsContainer: {
-    flexDirection: 'row',
+  hostLabel: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  hostName: {
+    fontSize: 18,
+    color: '#7B61FF',
+    fontWeight: '600',
+  },
+  tagsSection: {
+    marginBottom: 20,
   },
   tag: {
-    backgroundColor: '#f3edff',
-    borderRadius: 12,
+    backgroundColor: '#F3EDFF',
+    borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
     marginRight: 8,
   },
   tagText: {
-    fontSize: 12,
-    color: '#6750a4',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#7B61FF',
+    fontWeight: '600',
   },
-  section: {
-    marginBottom: 24,
+  detailsSection: {
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1C1B1F',
     marginBottom: 16,
   },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  detailCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  detailContent: {
-    flex: 1,
-    marginLeft: 12,
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1B1F',
+    marginLeft: 8,
   },
   detailText: {
     fontSize: 16,
     color: '#1C1B1F',
-    marginBottom: 4,
+    fontWeight: '500',
+    marginBottom: 12,
   },
-  linkText: {
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F3EDFF',
+    borderRadius: 8,
+  },
+  mapButtonText: {
     fontSize: 14,
-    color: '#7B3EFF',
-    textDecorationLine: 'underline',
+    color: '#7B61FF',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  dateTimeInfo: {
+    gap: 8,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateTimeText: {
+    fontSize: 16,
+    color: '#1C1B1F',
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  eventTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#7B61FF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+  },
+  eventTypeText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  descriptionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  descriptionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1B1F',
+    marginBottom: 12,
   },
   description: {
     fontSize: 16,
     color: '#1C1B1F',
     lineHeight: 24,
-    marginTop: 16,
+    fontWeight: '400',
   },
   bottomSection: {
     paddingHorizontal: 20,
     paddingVertical: 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#F0F0F0',
   },
-  rsvpButton: {
-    backgroundColor: '#7B3EFF',
-    borderRadius: 12,
-    paddingVertical: 16,
+  actionButton: {
+    backgroundColor: '#7B61FF',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
+    shadowColor: '#7B61FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  rsvpButtonActive: {
-    backgroundColor: '#E8F5E8',
-    borderWidth: 1,
-    borderColor: '#4CAF50',
+  actionButtonActive: {
+    backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
   },
-  rsvpButtonText: {
+  actionButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
-  rsvpButtonTextActive: {
-    color: '#4CAF50',
+  actionButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  priceText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    marginTop: 4,
+    opacity: 0.9,
   },
 });

@@ -17,6 +17,7 @@ export default function AddTicketScreen() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [requireApproval, setRequireApproval] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isEditing = !!params.editTicketId;
 
@@ -38,29 +39,31 @@ export default function AddTicketScreen() {
   const handleSave = () => {
     // Validate required fields
     if (!ticketName.trim()) {
-      Alert.alert('Error', 'Ticket name is required');
+      Alert.alert('Required Field', 'Ticket name is required');
       return;
     }
 
     if (!price.trim()) {
-      Alert.alert('Error', 'Price is required');
+      Alert.alert('Required Field', 'Price is required');
       return;
     }
 
     if (!capacity.trim()) {
-      Alert.alert('Error', 'Capacity is required');
+      Alert.alert('Required Field', 'Capacity is required');
       return;
     }
 
     if (!startDate.trim()) {
-      Alert.alert('Error', 'Start date is required');
+      Alert.alert('Required Field', 'Start date is required');
       return;
     }
 
     if (!endDate.trim()) {
-      Alert.alert('Error', 'End date is required');
+      Alert.alert('Required Field', 'End date is required');
       return;
     }
+
+    setIsLoading(true);
 
     // Prepare ticket data
     const ticketData = {
@@ -74,7 +77,7 @@ export default function AddTicketScreen() {
     };
 
     // Navigate back with ticket data and preserve original event parameters
-    const eventParams = {};
+    const eventParams: any = {};
     
     // Only add event parameters if they exist and are not undefined
     if (params.eventTitle && params.eventTitle !== 'undefined') {
@@ -105,29 +108,25 @@ export default function AddTicketScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Modern Back Button */}
+      <View style={styles.backContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <IconSymbol size={20} name="chevron.left" color="#007AFF" />
+          <IconSymbol size={20} name="chevron.left" color="#7B61FF" />
           <ThemedText style={styles.backText}>Back</ThemedText>
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>
-          {isEditing ? 'Edit Ticket' : 'Add Ticket'}
-        </ThemedText>
-        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Section Header */}
-        <View style={styles.section}>
+        <View style={styles.headerSection}>
           <ThemedText style={styles.title}>
             {isEditing ? 'Edit Ticket' : 'Add Ticket'}
           </ThemedText>
         </View>
 
-        {/* Ticket Type Toggle */}
-        <View style={styles.section}>
-          <ThemedText style={styles.label}>Ticket Type</ThemedText>
+        {/* Modern Ticket Type Toggle */}
+        <View style={styles.toggleSection}>
+          <ThemedText style={styles.sectionLabel}>Ticket Type</ThemedText>
           <View style={styles.toggleContainer}>
             {ticketTypes.map((type) => (
               <TouchableOpacity
@@ -137,6 +136,7 @@ export default function AddTicketScreen() {
                   selectedTicketType === type ? styles.toggleButtonActive : styles.toggleButtonInactive
                 ]}
                 onPress={() => setSelectedTicketType(type)}
+                activeOpacity={0.8}
               >
                 <ThemedText
                   style={[
@@ -152,24 +152,26 @@ export default function AddTicketScreen() {
         </View>
 
         {/* Ticket Configuration Fields */}
-        <View style={styles.section}>
+        <View style={styles.inputSection}>
+          <ThemedText style={styles.sectionLabel}>Ticket Details</ThemedText>
+          
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Ticket Name</ThemedText>
+            <ThemedText style={styles.inputLabel}>Ticket Name *</ThemedText>
             <TextInput
               style={styles.input}
-              placeholder="Enter ticket name"
-              placeholderTextColor="#A0A0A0"
+              placeholder="e.g., Early Bird"
+              placeholderTextColor="#999999"
               value={ticketName}
               onChangeText={setTicketName}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Price</ThemedText>
+            <ThemedText style={styles.inputLabel}>Price *</ThemedText>
             <TextInput
               style={styles.input}
-              placeholder="0.00"
-              placeholderTextColor="#A0A0A0"
+              placeholder="$10.00"
+              placeholderTextColor="#999999"
               value={price}
               onChangeText={setPrice}
               keyboardType="numeric"
@@ -177,11 +179,11 @@ export default function AddTicketScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Capacity</ThemedText>
+            <ThemedText style={styles.inputLabel}>Capacity *</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="100"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor="#999999"
               value={capacity}
               onChangeText={setCapacity}
               keyboardType="numeric"
@@ -190,16 +192,16 @@ export default function AddTicketScreen() {
         </View>
 
         {/* Ticket Availability Section */}
-        <View style={styles.section}>
-          <ThemedText style={styles.label}>Ticket Availability</ThemedText>
+        <View style={styles.availabilitySection}>
+          <ThemedText style={styles.sectionLabel}>Ticket Availability</ThemedText>
           
           <View style={styles.dateTimeField}>
             <View style={styles.dateTimeContent}>
-              <ThemedText style={styles.dateTimeLabel}>Start Date & Time</ThemedText>
+              <ThemedText style={styles.dateTimeLabel}>Start Date & Time *</ThemedText>
               <TextInput
                 style={styles.dateTimeInput}
                 placeholder="MM/DD/YYYY HH:MM AM/PM"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#999999"
                 value={startDate}
                 onChangeText={setStartDate}
               />
@@ -209,11 +211,11 @@ export default function AddTicketScreen() {
 
           <View style={styles.dateTimeField}>
             <View style={styles.dateTimeContent}>
-              <ThemedText style={styles.dateTimeLabel}>End Date & Time</ThemedText>
+              <ThemedText style={styles.dateTimeLabel}>End Date & Time *</ThemedText>
               <TextInput
                 style={styles.dateTimeInput}
                 placeholder="MM/DD/YYYY HH:MM AM/PM"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="#999999"
                 value={endDate}
                 onChangeText={setEndDate}
               />
@@ -223,7 +225,7 @@ export default function AddTicketScreen() {
         </View>
 
         {/* Approval Toggle */}
-        <View style={styles.section}>
+        <View style={styles.approvalSection}>
           <View style={styles.switchRow}>
             <ThemedText style={styles.switchLabel}>Require approval for this ticket</ThemedText>
             <Switch
@@ -236,10 +238,17 @@ export default function AddTicketScreen() {
         </View>
       </ScrollView>
 
-      {/* Save Button */}
+      {/* Modern Save Button */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+        <TouchableOpacity 
+          style={[styles.saveButton, { opacity: isLoading ? 0.6 : 1 }]} 
+          onPress={handleSave}
+          disabled={isLoading}
+          activeOpacity={0.8}
+        >
+          <ThemedText style={styles.saveButtonText}>
+            {isLoading ? 'Saving...' : 'Save Ticket'}
+          </ThemedText>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -249,75 +258,94 @@ export default function AddTicketScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  backContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
     backgroundColor: '#FFFFFF',
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   backText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#7B61FF',
+    fontWeight: '600',
     marginLeft: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1B1F',
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 60,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
-  section: {
+  headerSection: {
     marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#1C1B1F',
-    marginBottom: 8,
   },
-  label: {
-    fontSize: 16,
+  toggleSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionLabel: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#1C1B1F',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   toggleContainer: {
     flexDirection: 'row',
     backgroundColor: '#F0F0F0',
     borderRadius: 999,
     padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   toggleButtonActive: {
     backgroundColor: '#7B3EFF',
+    shadowColor: '#7B3EFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   toggleButtonInactive: {
     backgroundColor: 'transparent',
   },
   toggleText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   toggleTextActive: {
@@ -326,68 +354,116 @@ const styles = StyleSheet.create({
   toggleTextInactive: {
     color: '#1C1B1F',
   },
+  inputSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   inputGroup: {
     marginBottom: 20,
   },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1B1F',
+    marginBottom: 8,
+  },
   input: {
-    borderWidth: 2,
-    borderColor: '#D0C2FF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#1C1B1F',
     backgroundColor: '#FFFFFF',
+    fontWeight: '400',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  availabilitySection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   dateTimeField: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 2,
-    borderColor: '#D0C2FF',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 16,
     backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   dateTimeContent: {
     flex: 1,
   },
   dateTimeLabel: {
     fontSize: 14,
-    color: '#A0A0A0',
+    color: '#666666',
     marginBottom: 4,
-  },
-  dateTimeValue: {
-    fontSize: 16,
-    color: '#1C1B1F',
     fontWeight: '500',
   },
   dateTimeInput: {
     fontSize: 16,
     color: '#1C1B1F',
-    fontWeight: '500',
+    fontWeight: '400',
     paddingVertical: 0,
+  },
+  approvalSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 8,
   },
   switchLabel: {
     fontSize: 16,
     color: '#1C1B1F',
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
     marginRight: 16,
   },
   buttonContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 20,
     paddingTop: 16,
     backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
   saveButton: {
     backgroundColor: '#7B3EFF',
@@ -395,10 +471,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#7B3EFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });
