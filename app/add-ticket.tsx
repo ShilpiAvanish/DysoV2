@@ -8,12 +8,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 export default function AddTicketScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  
+  console.log('🎫 AddTicketScreen received params:', params);
   const [selectedTicketType, setSelectedTicketType] = useState('Custom');
   const [ticketName, setTicketName] = useState('');
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
-  const [startDate, setStartDate] = useState('Jul 26, 2025 at 1:21 PM');
-  const [endDate, setEndDate] = useState('Jul 27, 2025 at 1:21 PM');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [requireApproval, setRequireApproval] = useState(false);
 
   const isEditing = !!params.editTicketId;
@@ -25,8 +27,8 @@ export default function AddTicketScreen() {
       setTicketName(params.ticketName as string || '');
       setPrice(params.price as string || '');
       setCapacity(params.capacity as string || '');
-      setStartDate(params.startDate as string || 'Jul 26, 2025 at 1:21 PM');
-      setEndDate(params.endDate as string || 'Jul 27, 2025 at 1:21 PM');
+      setStartDate(params.startDate as string || '');
+      setEndDate(params.endDate as string || '');
       setRequireApproval(params.requireApproval === 'true');
     }
   }, [params]);
@@ -50,6 +52,16 @@ export default function AddTicketScreen() {
       return;
     }
 
+    if (!startDate.trim()) {
+      Alert.alert('Error', 'Start date is required');
+      return;
+    }
+
+    if (!endDate.trim()) {
+      Alert.alert('Error', 'End date is required');
+      return;
+    }
+
     // Prepare ticket data
     const ticketData = {
       ticketType: selectedTicketType,
@@ -61,10 +73,30 @@ export default function AddTicketScreen() {
       requireApproval
     };
 
-    // Navigate back with ticket data
+    // Navigate back with ticket data and preserve original event parameters
+    const eventParams = {};
+    
+    // Only add event parameters if they exist and are not undefined
+    if (params.eventTitle && params.eventTitle !== 'undefined') {
+      eventParams.eventTitle = params.eventTitle;
+    }
+    if (params.eventDate && params.eventDate !== 'undefined') {
+      eventParams.eventDate = params.eventDate;
+    }
+    if (params.eventLocation && params.eventLocation !== 'undefined') {
+      eventParams.eventLocation = params.eventLocation;
+    }
+    if (params.eventDescription && params.eventDescription !== 'undefined') {
+      eventParams.eventDescription = params.eventDescription;
+    }
+    
+    console.log('🎫 Preserving event params:', eventParams);
+    
     router.push({
       pathname: '/event-join-settings',
       params: {
+        ...eventParams,
+        // Add ticket data
         newTicket: JSON.stringify(ticketData),
         editTicketId: isEditing ? params.editTicketId : undefined
       }
@@ -161,21 +193,33 @@ export default function AddTicketScreen() {
         <View style={styles.section}>
           <ThemedText style={styles.label}>Ticket Availability</ThemedText>
           
-          <TouchableOpacity style={styles.dateTimeField}>
+          <View style={styles.dateTimeField}>
             <View style={styles.dateTimeContent}>
               <ThemedText style={styles.dateTimeLabel}>Start Date & Time</ThemedText>
-              <ThemedText style={styles.dateTimeValue}>{startDate}</ThemedText>
+              <TextInput
+                style={styles.dateTimeInput}
+                placeholder="MM/DD/YYYY HH:MM AM/PM"
+                placeholderTextColor="#A0A0A0"
+                value={startDate}
+                onChangeText={setStartDate}
+              />
             </View>
             <IconSymbol size={20} name="calendar" color="#7B3EFF" />
-          </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity style={styles.dateTimeField}>
+          <View style={styles.dateTimeField}>
             <View style={styles.dateTimeContent}>
               <ThemedText style={styles.dateTimeLabel}>End Date & Time</ThemedText>
-              <ThemedText style={styles.dateTimeValue}>{endDate}</ThemedText>
+              <TextInput
+                style={styles.dateTimeInput}
+                placeholder="MM/DD/YYYY HH:MM AM/PM"
+                placeholderTextColor="#A0A0A0"
+                value={endDate}
+                onChangeText={setEndDate}
+              />
             </View>
             <IconSymbol size={20} name="calendar" color="#7B3EFF" />
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Approval Toggle */}
@@ -319,6 +363,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1C1B1F',
     fontWeight: '500',
+  },
+  dateTimeInput: {
+    fontSize: 16,
+    color: '#1C1B1F',
+    fontWeight: '500',
+    paddingVertical: 0,
   },
   switchRow: {
     flexDirection: 'row',

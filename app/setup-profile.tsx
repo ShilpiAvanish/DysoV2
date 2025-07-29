@@ -27,45 +27,68 @@ export default function SetupProfileScreen() {
     console.log('Take photo');
   };
 
+  const testButtonPress = () => {
+    console.log('🔘 Button pressed!');
+    Alert.alert('Test', 'Button is working!');
+  };
+
   const handleComplete = async () => {
+    console.log('=== handleComplete called ===');
+    console.log('Form data:', { username, name, birthday, campus, selectedGender });
+    
     // Validate required fields
     if (!username.trim()) {
+      console.log('❌ Username validation failed');
       Alert.alert('Error', 'Username is required');
       return;
     }
+    console.log('✅ Username validation passed');
 
     if (!name.trim()) {
+      console.log('❌ Name validation failed');
       Alert.alert('Error', 'Name is required');
       return;
     }
+    console.log('✅ Name validation passed');
 
     if (!birthday.trim()) {
+      console.log('❌ Birthday validation failed');
       Alert.alert('Error', 'Birthday is required');
       return;
     }
+    console.log('✅ Birthday validation passed');
 
     if (!campus.trim()) {
+      console.log('❌ Campus validation failed');
       Alert.alert('Error', 'Campus is required');
       return;
     }
+    console.log('✅ Campus validation passed');
 
     // Basic birthday format validation (MM/DD/YYYY)
     const birthdayRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+    console.log('Birthday format test:', birthdayRegex.test(birthday), 'for birthday:', birthday);
     if (!birthdayRegex.test(birthday)) {
+      console.log('❌ Birthday format validation failed');
       Alert.alert('Error', 'Please enter birthday in MM/DD/YYYY format');
       return;
     }
+    console.log('✅ Birthday format validation passed');
 
+    console.log('🚀 Starting Supabase operations...');
     setIsLoading(true);
 
     try {
       // Get current user
+      console.log('🔍 Getting current user...');
       const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (userError || !user) {
+        console.log('❌ User authentication failed:', userError);
         Alert.alert('Error', 'You must be logged in to complete your profile');
         return;
       }
+      console.log('✅ User authentication successful:', user.id);
 
       // Convert birthday from MM/DD/YYYY to YYYY-MM-DD for database
       const [month, day, year] = birthday.split('/');
@@ -83,7 +106,10 @@ export default function SetupProfileScreen() {
         phone_number: user.phone || null,
       };
 
+      console.log('💾 Saving profile data:', profileData);
+      
       // Insert or update profile
+      console.log('📤 Sending to Supabase...');
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert(profileData, {
@@ -91,29 +117,44 @@ export default function SetupProfileScreen() {
         });
 
       if (profileError) {
-        console.error('Error saving profile:', profileError);
+        console.error('❌ Error saving profile:', profileError);
         Alert.alert('Error', 'Failed to save profile. Please try again.');
         return;
       }
+      console.log('✅ Profile saved successfully!');
 
-      console.log('Profile setup complete');
-      Alert.alert('Success', 'Profile setup complete!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.replace('/(tabs)');
-          }
-        }
-      ]);
+      console.log('🎉 Profile setup complete - navigating directly');
+      
+      // Navigate directly to the EventsList (Home tab) without showing alert
+      console.log('🚀 Navigating to EventsList...');
+      
+      // Try navigating to the tabs with replace
+      router.replace('/(tabs)');
+      
+      // Add a fallback to check if navigation worked
+      setTimeout(() => {
+        console.log('🔄 Checking if navigation worked...');
+        console.log('Current route:', router.canGoBack());
+      }, 1000);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('💥 Unexpected error:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
+      console.log('🏁 handleComplete finished, setting loading to false');
       setIsLoading(false);
     }
   };
 
   const genderOptions = ['Male', 'Female', 'Other'];
+
+  // Check if all required fields are filled
+  const birthdayRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/;
+  const isFormValid = username.trim() && name.trim() && birthday.trim() && campus.trim() && birthdayRegex.test(birthday);
+  
+  // Debug form validation (only log when form becomes valid)
+  if (isFormValid) {
+    console.log('✅ Form is now valid and ready to submit');
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -252,7 +293,11 @@ export default function SetupProfileScreen() {
 
       {/* Complete Button */}
       <View style={styles.buttonSection}>
-        <TouchableOpacity style={styles.completeButton} onPress={handleComplete} disabled={isLoading}>
+        <TouchableOpacity 
+          style={[styles.completeButton, { opacity: (isFormValid && !isLoading) ? 1 : 0.6 }]} 
+          onPress={handleComplete} 
+          disabled={!isFormValid || isLoading}
+        >
           <Text style={styles.completeButtonText}>{isLoading ? "Saving..." : "Complete →"}</Text>
         </TouchableOpacity>
       </View>

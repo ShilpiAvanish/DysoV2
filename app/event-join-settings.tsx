@@ -26,16 +26,57 @@ export default function EventJoinSettingsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
+  // Debug: Log initial params
+  console.log('🎯 EventJoinSettingsScreen loaded with params:', params);
+
   const handleAddTicket = () => {
-    router.push('/add-ticket');
+    // Preserve event parameters when navigating to add-ticket
+    const eventParams = {};
+    if (params.eventTitle && params.eventTitle !== 'undefined') {
+      eventParams.eventTitle = params.eventTitle;
+    }
+    if (params.eventDate && params.eventDate !== 'undefined') {
+      eventParams.eventDate = params.eventDate;
+    }
+    if (params.eventLocation && params.eventLocation !== 'undefined') {
+      eventParams.eventLocation = params.eventLocation;
+    }
+    if (params.eventDescription && params.eventDescription !== 'undefined') {
+      eventParams.eventDescription = params.eventDescription;
+    }
+    
+    console.log('🎫 Navigating to add-ticket with event params:', eventParams);
+    
+    router.push({
+      pathname: '/add-ticket',
+      params: eventParams
+    });
   };
 
   const handleEditTicket = (ticketId: string) => {
     const ticket = tickets.find(t => t.id === ticketId);
     if (ticket) {
+      // Preserve event parameters when navigating to add-ticket
+      const eventParams = {};
+      if (params.eventTitle && params.eventTitle !== 'undefined') {
+        eventParams.eventTitle = params.eventTitle;
+      }
+      if (params.eventDate && params.eventDate !== 'undefined') {
+        eventParams.eventDate = params.eventDate;
+      }
+      if (params.eventLocation && params.eventLocation !== 'undefined') {
+        eventParams.eventLocation = params.eventLocation;
+      }
+      if (params.eventDescription && params.eventDescription !== 'undefined') {
+        eventParams.eventDescription = params.eventDescription;
+      }
+      
+      console.log('🎫 Navigating to edit ticket with event params:', eventParams);
+      
       router.push({
         pathname: '/add-ticket',
         params: {
+          ...eventParams,
           editTicketId: ticketId,
           ticketType: ticket.ticketType,
           ticketName: ticket.ticketName,
@@ -72,35 +113,112 @@ export default function EventJoinSettingsScreen() {
       // Check if we have ticket data in params (when returning from add-ticket)
       if (params.newTicket && params.newTicket !== 'undefined') {
         try {
+          console.log('🎫 Received ticket data from add-ticket page:', params.newTicket);
           const ticketData = JSON.parse(params.newTicket as string);
+          console.log('🎫 Parsed ticket data:', ticketData);
+          
           if (params.editTicketId) {
             // Update existing ticket
+            console.log('🔄 Updating existing ticket:', params.editTicketId);
             setTickets(prev => prev.map(ticket => 
               ticket.id === params.editTicketId ? { ...ticketData, id: params.editTicketId } : ticket
             ));
           } else {
             // Add new ticket
+            console.log('➕ Adding new ticket to state');
             setTickets(prev => [...prev, { ...ticketData, id: Date.now().toString() }]);
           }
-          // Clear the params
-          router.setParams({ newTicket: undefined, editTicketId: undefined });
+          
+          // Clear the ticket params but preserve event params
+          const eventParams = {};
+          if (params.eventTitle && params.eventTitle !== 'undefined') {
+            eventParams.eventTitle = params.eventTitle;
+          }
+          if (params.eventDate && params.eventDate !== 'undefined') {
+            eventParams.eventDate = params.eventDate;
+          }
+          if (params.eventLocation && params.eventLocation !== 'undefined') {
+            eventParams.eventLocation = params.eventLocation;
+          }
+          if (params.eventDescription && params.eventDescription !== 'undefined') {
+            eventParams.eventDescription = params.eventDescription;
+          }
+          
+          console.log('🔄 Preserving event params in useFocusEffect:', eventParams);
+          
+          router.setParams({ 
+            newTicket: undefined, 
+            editTicketId: undefined,
+            ...eventParams
+          });
         } catch (error) {
-          console.error('Error parsing ticket data:', error);
+          console.error('❌ Error parsing ticket data:', error);
         }
       }
     }, [params.newTicket, params.editTicketId])
   );
 
   const convertDateToTimestamp = (dateString: string) => {
+    // Validate that dateString exists and is not empty
+    if (!dateString || typeof dateString !== 'string') {
+      console.error('Invalid date string:', dateString);
+      throw new Error('Event date is required');
+    }
+    
     // Convert MM/DD/YYYY to ISO timestamp
     const [month, day, year] = dateString.split('/');
+    
+    // Validate that we have all parts
+    if (!month || !day || !year) {
+      console.error('Invalid date format:', dateString);
+      throw new Error('Please enter date in MM/DD/YYYY format');
+    }
+    
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    // Validate that the date is valid
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      throw new Error('Please enter a valid date');
+    }
+    
     // Set time to 8 PM as default
     date.setHours(20, 0, 0, 0);
     return date.toISOString();
   };
 
   const handleCreateEvent = async () => {
+    console.log('🎯 handleCreateEvent called with params:', params);
+    console.log('🎫 Current tickets in state:', tickets);
+    console.log('🎫 Selected option:', selectedOption);
+    
+    // Debug: Check each parameter individually
+    console.log('🔍 Event Title:', params.eventTitle, 'Type:', typeof params.eventTitle);
+    console.log('🔍 Event Date:', params.eventDate, 'Type:', typeof params.eventDate);
+    console.log('🔍 Event Location:', params.eventLocation, 'Type:', typeof params.eventLocation);
+    console.log('🔍 Event Description:', params.eventDescription, 'Type:', typeof params.eventDescription);
+    
+    // Validate required parameters
+    if (!params.eventTitle || params.eventTitle === 'undefined') {
+      Alert.alert('Error', 'Event title is required');
+      return;
+    }
+    
+    if (!params.eventDate || params.eventDate === 'undefined') {
+      Alert.alert('Error', 'Event date is required');
+      return;
+    }
+    
+    if (!params.eventLocation || params.eventLocation === 'undefined') {
+      Alert.alert('Error', 'Event location is required');
+      return;
+    }
+    
+    if (!params.eventDescription || params.eventDescription === 'undefined') {
+      Alert.alert('Error', 'Event description is required');
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -113,11 +231,21 @@ export default function EventJoinSettingsScreen() {
       }
 
       // Prepare event data
+      let dateTime;
+      try {
+        dateTime = convertDateToTimestamp(params.eventDate as string);
+      } catch (error) {
+        console.error('Date conversion error:', error);
+        Alert.alert('Error', error instanceof Error ? error.message : 'Invalid date format');
+        setIsLoading(false);
+        return;
+      }
+      
       const eventData = {
         title: params.eventTitle as string,
         description: params.eventDescription as string,
         host_id: user.id,
-        date_time: convertDateToTimestamp(params.eventDate as string),
+        date_time: dateTime,
         location: params.eventLocation as string,
         address: params.eventLocation as string, // Use location as address for now
         is_private: false, // Default to public
@@ -143,12 +271,17 @@ export default function EventJoinSettingsScreen() {
       }
 
       console.log('Event created successfully:', newEvent);
+      console.log('Event ID:', newEvent.id);
 
       // If tickets were added, save them to the database
       if (selectedOption === 'Tickets' && tickets.length > 0) {
+        console.log('🎫 Saving tickets for event:', newEvent.id);
+        console.log('Tickets to save:', tickets);
+        
         const ticketData = tickets.map(ticket => ({
-          event_id: newEvent.id,
+          event_id: newEvent.id, // This links the ticket to the event
           name: ticket.ticketName,
+          description: '', // Add empty description for now
           price: parseFloat(ticket.price) || 0,
           capacity: parseInt(ticket.capacity) || null,
           ticket_type: ticket.ticketType.toLowerCase(),
@@ -157,24 +290,31 @@ export default function EventJoinSettingsScreen() {
           require_approval: ticket.requireApproval
         }));
 
-        const { error: ticketsError } = await supabase
+        console.log('🎫 Ticket data to insert:', ticketData);
+
+        const { data: savedTickets, error: ticketsError } = await supabase
           .from('tickets')
-          .insert(ticketData);
+          .insert(ticketData)
+          .select();
 
         if (ticketsError) {
-          console.error('Error creating tickets:', ticketsError);
+          console.error('❌ Error creating tickets:', ticketsError);
           Alert.alert('Warning', 'Event created but failed to save tickets');
         } else {
-          console.log('Tickets created successfully');
+          console.log('✅ Tickets created successfully:', savedTickets);
         }
+      } else {
+        console.log('ℹ️ No tickets to save (selectedOption:', selectedOption, ', tickets.length:', tickets.length, ')');
       }
 
-      Alert.alert('Success', 'Event created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.push('/(tabs)/profile')
-        }
-      ]);
+      // Clear state and navigate to profile page automatically
+      setTickets([]);
+      setSelectedOption('RSVP');
+      setRequireApproval(false);
+      setAllowPlusOne(false);
+      
+      // Navigate to profile page automatically
+      router.push('/(tabs)/profile');
 
     } catch (error) {
       console.error('Unexpected error creating event:', error);

@@ -32,14 +32,18 @@ export default function CreateEventScreen() {
     }
 
     // Pass event data to next screen
+    const eventParams = {
+      eventTitle,
+      eventDate,
+      eventLocation,
+      eventDescription
+    };
+    
+    console.log('🎯 Create page passing params:', eventParams);
+    
     router.push({
       pathname: '/event-join-settings',
-      params: {
-        eventTitle,
-        eventDate,
-        eventLocation,
-        eventDescription
-      }
+      params: eventParams
     });
   };
 
