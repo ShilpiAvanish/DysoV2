@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Switch, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -164,10 +163,12 @@ export default function EventJoinSettingsScreen() {
 
         if (ticketsError) {
           console.error('Error creating tickets:', ticketsError);
-          Alert.alert('Warning', 'Event created but there was an issue with tickets. Please check your event.');
+          Alert.alert('Warning', 'Event created but failed to save tickets');
+        } else {
+          console.log('Tickets created successfully');
         }
       }
-      
+
       Alert.alert('Success', 'Event created successfully!', [
         {
           text: 'OK',
@@ -176,7 +177,7 @@ export default function EventJoinSettingsScreen() {
       ]);
 
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('Unexpected error creating event:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -301,7 +302,7 @@ export default function EventJoinSettingsScreen() {
                 </View>
               ))}
             </View>
-            
+
             {/* Add Ticket Button - always at the bottom */}
             <View style={styles.ticketContainer}>
               <TouchableOpacity style={styles.addTicketButton} onPress={handleAddTicket}>
