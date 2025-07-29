@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -46,7 +45,7 @@ export default function Index() {
         return;
       }
 
-      // User is authenticated and has profile, go to main app
+      // Profile exists, go to main app  
       router.replace('/(tabs)');
     } catch (error) {
       console.error('Error checking auth and profile:', error);

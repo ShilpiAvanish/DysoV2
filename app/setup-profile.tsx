@@ -100,7 +100,7 @@ export default function SetupProfileScreen() {
       Alert.alert('Success', 'Profile setup complete!', [
         {
           text: 'OK',
-          onPress: () => router.push('/(tabs)')
+          onPress: () => router.replace('/(tabs)')
         }
       ]);
 
