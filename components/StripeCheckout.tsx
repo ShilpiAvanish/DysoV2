@@ -18,6 +18,13 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
     try {
       setIsLoading(true);
       
+      // Check if Stripe is configured
+      if (!stripePromise) {
+        Alert.alert('Configuration Error', 'Stripe is not properly configured. Please contact support.');
+        setIsLoading(false);
+        return;
+      }
+      
       // Create payment intent on server
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',

@@ -3,6 +3,17 @@ import { stripe } from '@/lib/stripe';
 
 export async function POST(request: Request) {
   try {
+    if (!stripe) {
+      return new Response(JSON.stringify({
+        error: 'Stripe is not configured properly',
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
     const { amount, eventId, eventName } = await request.json();
 
     // Create a PaymentIntent with the order amount and currency
