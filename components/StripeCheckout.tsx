@@ -37,27 +37,49 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
   };
 
   const validateCard = () => {
+    console.log('🔍 Validating card details...');
+    console.log('Card Number:', cardNumber, 'Length after cleaning:', cardNumber.replace(/\s/g, '').length);
+    console.log('Expiry Date:', expiryDate, 'Length:', expiryDate.length);
+    console.log('CVC:', cvc, 'Length:', cvc.length);
+    console.log('Cardholder Name:', cardholderName, 'Trimmed length:', cardholderName.trim().length);
+    
     const cleanCardNumber = cardNumber.replace(/\s/g, '');
     if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+      console.log('❌ Card number validation failed');
       Alert.alert('Invalid Card', 'Please enter a valid card number');
       return false;
     }
     
-    if (expiryDate.length !== 5) {
+    if (expiryDate.length !== 5 || !expiryDate.includes('/')) {
+      console.log('❌ Expiry date validation failed');
       Alert.alert('Invalid Expiry', 'Please enter expiry date in MM/YY format');
       return false;
     }
     
+    // Validate expiry date format and values
+    const [month, year] = expiryDate.split('/');
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
+    
+    if (monthNum < 1 || monthNum > 12) {
+      console.log('❌ Invalid month');
+      Alert.alert('Invalid Expiry', 'Please enter a valid month (01-12)');
+      return false;
+    }
+    
     if (cvc.length < 3 || cvc.length > 4) {
+      console.log('❌ CVC validation failed');
       Alert.alert('Invalid CVC', 'Please enter a valid CVC code');
       return false;
     }
     
     if (!cardholderName.trim()) {
+      console.log('❌ Cardholder name validation failed');
       Alert.alert('Missing Name', 'Please enter the cardholder name');
       return false;
     }
     
+    console.log('✅ All card validations passed');
     return true;
   };
 
