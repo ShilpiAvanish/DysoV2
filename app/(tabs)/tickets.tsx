@@ -41,12 +41,14 @@ export default function TicketsScreen() {
       if (userError || !user) {
         console.error('❌ User not authenticated:', userError);
         Alert.alert('Error', 'You must be logged in to view your tickets');
+        setIsLoading(false);
         return;
       }
 
       console.log('✅ User authenticated:', user.id);
 
       // Fetch user's event attendance (both RSVP and ticket purchases)
+      console.log('🔍 Fetching attendance data...');
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('event_attendees')
         .select(`
@@ -76,13 +78,14 @@ export default function TicketsScreen() {
 
       if (attendanceError) {
         console.error('❌ Error fetching attendance data:', attendanceError);
-        Alert.alert('Error', 'Failed to load your tickets');
-        return;
+        console.error('❌ Attendance error details:', JSON.stringify(attendanceError, null, 2));
+        // Don't return here, continue to fetch RSVPs
       }
 
-      console.log('✅ Attendance data fetched:', attendanceData);
+      console.log('✅ Attendance data fetched:', attendanceData?.length || 0, 'records');
 
       // Also fetch direct RSVPs that might not be in event_attendees
+      console.log('🔍 Fetching RSVP data...');
       const { data: rsvpData, error: rsvpError } = await supabase
         .from('rsvps')
         .select(`
@@ -102,23 +105,29 @@ export default function TicketsScreen() {
         .eq('status', 'going');
 
       if (rsvpError) {
-        console.error('⚠️ Error fetching RSVP data (non-critical):', rsvpError);
+        console.error('⚠️ Error fetching RSVP data:', rsvpError);
+        console.error('⚠️ RSVP error details:', JSON.stringify(rsvpError, null, 2));
       } else {
-        console.log('✅ RSVP data fetched:', rsvpData);
+        console.log('✅ RSVP data fetched:', rsvpData?.length || 0, 'records');
+        console.log('📋 RSVP details:', rsvpData);
       }
 
       // Combine attendance data and RSVP data
+      console.log('🔄 Combining attendance and RSVP data...');
       const allAttendanceData = [...(attendanceData || [])];
       
       // Add RSVPs that aren't already in attendance data
-      if (rsvpData) {
+      if (rsvpData && rsvpData.length > 0) {
+        console.log('🔄 Processing', rsvpData.length, 'RSVP records...');
         for (const rsvp of rsvpData) {
           const existsInAttendance = attendanceData?.some(
             attendance => attendance.event_id === rsvp.event_id
           );
+          console.log('🔍 RSVP event', rsvp.event_id, 'exists in attendance:', existsInAttendance);
+          
           if (!existsInAttendance) {
             // Convert RSVP to attendance format
-            allAttendanceData.push({
+            const convertedRsvp = {
               id: rsvp.id,
               event_id: rsvp.event_id,
               attendance_type: 'rsvp',
@@ -126,15 +135,22 @@ export default function TicketsScreen() {
               ticket_id: null,
               events: rsvp.events,
               tickets: null
-            });
+            };
+            allAttendanceData.push(convertedRsvp);
+            console.log('✅ Added RSVP to combined data:', convertedRsvp);
           }
         }
+      } else {
+        console.log('⚠️ No RSVP data to process');
       }
 
-      console.log('✅ Combined attendance data:', allAttendanceData);
+      console.log('✅ Combined attendance data:', allAttendanceData.length, 'total records');
+      console.log('📋 Combined data details:', allAttendanceData);
 
       // Transform the data into UserTicket format
-      const transformedTickets: UserTicket[] = allAttendanceData.map((attendance) => {
+      console.log('🔄 Transforming', allAttendanceData.length, 'records into UserTicket format...');
+      const transformedTickets: UserTicket[] = allAttendanceData.map((attendance, index) => {
+        console.log(`🔄 Transforming record ${index + 1}:`, attendance);
         const event = attendance.events;
         const ticket = attendance.tickets;
         const now = new Date();
@@ -161,7 +177,7 @@ export default function TicketsScreen() {
           price = 'Free';
         }
 
-        return {
+        const transformedTicket = {
           id: attendance.id,
           eventName: event.title,
           date: formattedDate,
@@ -171,15 +187,21 @@ export default function TicketsScreen() {
           eventId: event.id,
           isPastEvent: eventDate < now
         };
+        
+        console.log(`✅ Transformed ticket ${index + 1}:`, transformedTicket);
+        return transformedTicket;
       });
 
-      console.log('✅ Transformed tickets:', transformedTickets);
+      console.log('✅ All transformed tickets:', transformedTickets.length, 'tickets');
+      console.log('📋 Final tickets array:', transformedTickets);
       setTickets(transformedTickets);
 
     } catch (error) {
       console.error('💥 Unexpected error fetching tickets:', error);
+      console.error('💥 Error details:', JSON.stringify(error, null, 2));
       Alert.alert('Error', 'An unexpected error occurred while loading your tickets');
     } finally {
+      console.log('🏁 Fetch tickets completed, setting loading to false');
       setIsLoading(false);
     }
   };
@@ -234,6 +256,13 @@ export default function TicketsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <ThemedText style={styles.headerTitle}>Tickets</ThemedText>
+          <TouchableOpacity 
+            style={styles.refreshButton} 
+            onPress={fetchUserTickets}
+            activeOpacity={0.8}
+          >
+            <IconSymbol size={20} name="arrow.clockwise" color="#7B3EFF" />
+          </TouchableOpacity>
         </View>
 
         {/* Tabs */}
@@ -325,6 +354,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,
@@ -333,6 +365,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#1C1B1F',
+  },
+  refreshButton: {
+    padding: 8,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
   },
   loadingContainer: {
     flex: 1,
