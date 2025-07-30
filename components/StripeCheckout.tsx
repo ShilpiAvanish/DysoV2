@@ -224,6 +224,7 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
             />
           </View>
         </View>
+        </View>
       </ScrollView>
       
       <View style={styles.buttonContainer}>
