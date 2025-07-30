@@ -71,7 +71,7 @@ export default function TicketsScreen() {
           )
         `)
         .eq('user_id', user.id)
-        .eq('status', 'approved')
+        .in('status', ['approved', 'pending'])
         .order('events(date_time)', { ascending: true });
 
       if (attendanceError) {
@@ -82,8 +82,59 @@ export default function TicketsScreen() {
 
       console.log('✅ Attendance data fetched:', attendanceData);
 
+      // Also fetch direct RSVPs that might not be in event_attendees
+      const { data: rsvpData, error: rsvpError } = await supabase
+        .from('rsvps')
+        .select(`
+          id,
+          event_id,
+          status,
+          events!inner(
+            id,
+            title,
+            date_time,
+            location,
+            address,
+            join_type
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'going');
+
+      if (rsvpError) {
+        console.error('⚠️ Error fetching RSVP data (non-critical):', rsvpError);
+      } else {
+        console.log('✅ RSVP data fetched:', rsvpData);
+      }
+
+      // Combine attendance data and RSVP data
+      const allAttendanceData = [...(attendanceData || [])];
+      
+      // Add RSVPs that aren't already in attendance data
+      if (rsvpData) {
+        for (const rsvp of rsvpData) {
+          const existsInAttendance = attendanceData?.some(
+            attendance => attendance.event_id === rsvp.event_id
+          );
+          if (!existsInAttendance) {
+            // Convert RSVP to attendance format
+            allAttendanceData.push({
+              id: rsvp.id,
+              event_id: rsvp.event_id,
+              attendance_type: 'rsvp',
+              status: 'approved', // RSVPs in 'going' status are considered approved
+              ticket_id: null,
+              events: rsvp.events,
+              tickets: null
+            });
+          }
+        }
+      }
+
+      console.log('✅ Combined attendance data:', allAttendanceData);
+
       // Transform the data into UserTicket format
-      const transformedTickets: UserTicket[] = (attendanceData || []).map((attendance) => {
+      const transformedTickets: UserTicket[] = allAttendanceData.map((attendance) => {
         const event = attendance.events;
         const ticket = attendance.tickets;
         const now = new Date();
