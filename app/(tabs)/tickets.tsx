@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -57,19 +56,13 @@ export default function TicketsScreen() {
           attendance_type,
           status,
           ticket_id,
-          events!inner(
+          events:event_id (
             id,
             title,
             date_time,
             location,
             address,
             join_type
-          ),
-          tickets(
-            id,
-            name,
-            price,
-            ticket_type
           )
         `)
         .eq('user_id', user.id)
@@ -112,50 +105,71 @@ export default function TicketsScreen() {
         console.log('📋 RSVP details:', rsvpData);
       }
 
-      // Combine attendance data and RSVP data
+      // Process and combine the data
       console.log('🔄 Combining attendance and RSVP data...');
-      const allAttendanceData = [...(attendanceData || [])];
-      
-      // Add RSVPs that aren't already in attendance data
-      if (rsvpData && rsvpData.length > 0) {
-        console.log('🔄 Processing', rsvpData.length, 'RSVP records...');
+      const combinedData: any[] = [];
+
+      // Add attendance data
+      if (attendanceData) {
+        for (const attendance of attendanceData) {
+          // For ticketed events, fetch ticket data separately if needed
+          let ticketData = null;
+          if (attendance.ticket_id) {
+            const { data: ticket } = await supabase
+              .from('tickets')
+              .select('id, price, ticket_type')
+              .eq('id', attendance.ticket_id)
+              .single();
+            ticketData = ticket;
+          }
+
+          combinedData.push({
+            ...attendance,
+            tickets: ticketData
+          });
+        }
+      }
+
+      // Add RSVP data that's not already in attendance
+      console.log('🔄 Processing', rsvpData?.length || 0, 'RSVP records...');
+      if (rsvpData) {
         for (const rsvp of rsvpData) {
-          const existsInAttendance = attendanceData?.some(
-            attendance => attendance.event_id === rsvp.event_id
+          const existsInAttendance = attendanceData?.find(
+            (attendance) => attendance.event_id === rsvp.event_id
           );
-          console.log('🔍 RSVP event', rsvp.event_id, 'exists in attendance:', existsInAttendance);
-          
+
+          console.log('🔍 RSVP event', rsvp.event_id, 'exists in attendance:', existsInAttendance?.id || null);
+
           if (!existsInAttendance) {
-            // Convert RSVP to attendance format
-            const convertedRsvp = {
+            // Transform RSVP to match attendance structure
+            const transformedRSVP = {
               id: rsvp.id,
               event_id: rsvp.event_id,
               attendance_type: 'rsvp',
-              status: 'approved', // RSVPs in 'going' status are considered approved
+              status: 'approved',
               ticket_id: null,
               events: rsvp.events,
               tickets: null
             };
-            allAttendanceData.push(convertedRsvp);
-            console.log('✅ Added RSVP to combined data:', convertedRsvp);
+
+            combinedData.push(transformedRSVP);
+            console.log('✅ Added RSVP to combined data:', transformedRSVP);
           }
         }
-      } else {
-        console.log('⚠️ No RSVP data to process');
       }
 
-      console.log('✅ Combined attendance data:', allAttendanceData.length, 'total records');
-      console.log('📋 Combined data details:', allAttendanceData);
+      console.log('✅ Combined attendance data:', combinedData.length, 'total records');
+      console.log('📋 Combined data details:', combinedData);
 
       // Transform the data into UserTicket format
-      console.log('🔄 Transforming', allAttendanceData.length, 'records into UserTicket format...');
-      const transformedTickets: UserTicket[] = allAttendanceData.map((attendance, index) => {
+      console.log('🔄 Transforming', combinedData.length, 'records into UserTicket format...');
+      const transformedTickets: UserTicket[] = combinedData.map((attendance, index) => {
         console.log(`🔄 Transforming record ${index + 1}:`, attendance);
         const event = attendance.events;
         const ticket = attendance.tickets;
         const now = new Date();
         const eventDate = new Date(event.date_time);
-        
+
         // Format date for display
         const formattedDate = eventDate.toLocaleDateString('en-US', {
           weekday: 'short',
@@ -187,7 +201,7 @@ export default function TicketsScreen() {
           eventId: event.id,
           isPastEvent: eventDate < now
         };
-        
+
         console.log(`✅ Transformed ticket ${index + 1}:`, transformedTicket);
         return transformedTicket;
       });
