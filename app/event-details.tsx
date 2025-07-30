@@ -165,7 +165,8 @@ export default function EventDetailsScreen() {
         // User wants to RSVP - insert/update to 'going'
         console.log('🎯 Adding RSVP for user:', user.id, 'to event:', event.id);
         
-        const { error } = await supabase
+        // Update rsvps table
+        const { error: rsvpError } = await supabase
           .from('rsvps')
           .upsert({
             event_id: event.id,
@@ -175,32 +176,65 @@ export default function EventDetailsScreen() {
             onConflict: 'event_id,user_id'
           });
 
-        if (error) {
-          console.error('❌ Error adding RSVP:', error);
+        if (rsvpError) {
+          console.error('❌ Error adding RSVP:', rsvpError);
           Alert.alert('Error', 'Failed to save RSVP. Please try again.');
           return;
         }
 
-        console.log('✅ RSVP saved successfully');
+        // Also update event_attendees table
+        const { error: attendeeError } = await supabase
+          .from('event_attendees')
+          .upsert({
+            event_id: event.id,
+            user_id: user.id,
+            attendance_type: 'rsvp',
+            status: event.require_approval ? 'pending' : 'approved'
+          }, {
+            onConflict: 'event_id,user_id'
+          });
+
+        if (attendeeError) {
+          console.error('❌ Error adding to event_attendees:', attendeeError);
+          Alert.alert('Error', 'Failed to save attendance record. Please try again.');
+          return;
+        }
+
+        console.log('✅ RSVP and attendance record saved successfully');
         setIsGoing(true);
         console.log('RSVP confirmed');
       } else {
-        // User wants to remove RSVP - delete from table
+        // User wants to remove RSVP - delete from both tables
         console.log('🗑️ Removing RSVP for user:', user.id, 'from event:', event.id);
         
-        const { error } = await supabase
+        // Remove from rsvps table
+        const { error: rsvpError } = await supabase
           .from('rsvps')
           .delete()
           .eq('event_id', event.id)
           .eq('user_id', user.id);
 
-        if (error) {
-          console.error('❌ Error removing RSVP:', error);
+        if (rsvpError) {
+          console.error('❌ Error removing RSVP:', rsvpError);
           Alert.alert('Error', 'Failed to remove RSVP. Please try again.');
           return;
         }
 
-        console.log('✅ RSVP removed successfully');
+        // Also remove from event_attendees table
+        const { error: attendeeError } = await supabase
+          .from('event_attendees')
+          .delete()
+          .eq('event_id', event.id)
+          .eq('user_id', user.id)
+          .eq('attendance_type', 'rsvp');
+
+        if (attendeeError) {
+          console.error('❌ Error removing from event_attendees:', attendeeError);
+          Alert.alert('Error', 'Failed to remove attendance record. Please try again.');
+          return;
+        }
+
+        console.log('✅ RSVP and attendance record removed successfully');
         setIsGoing(false);
         console.log('Removed RSVP');
       }
