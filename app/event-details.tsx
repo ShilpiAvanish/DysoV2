@@ -144,9 +144,70 @@ export default function EventDetailsScreen() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const handleRSVP = () => {
-    setIsGoing(!isGoing);
-    console.log(isGoing ? 'Removed RSVP' : 'RSVP confirmed');
+  const handleRSVP = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to RSVP');
+        return;
+      }
+
+      if (!event) {
+        Alert.alert('Error', 'Event not found');
+        return;
+      }
+
+      const newIsGoing = !isGoing;
+      
+      if (newIsGoing) {
+        // User wants to RSVP - insert/update to 'going'
+        console.log('🎯 Adding RSVP for user:', user.id, 'to event:', event.id);
+        
+        const { error } = await supabase
+          .from('rsvps')
+          .upsert({
+            event_id: event.id,
+            user_id: user.id,
+            status: 'going'
+          }, {
+            onConflict: 'event_id,user_id'
+          });
+
+        if (error) {
+          console.error('❌ Error adding RSVP:', error);
+          Alert.alert('Error', 'Failed to save RSVP. Please try again.');
+          return;
+        }
+
+        console.log('✅ RSVP saved successfully');
+        setIsGoing(true);
+        console.log('RSVP confirmed');
+      } else {
+        // User wants to remove RSVP - delete from table
+        console.log('🗑️ Removing RSVP for user:', user.id, 'from event:', event.id);
+        
+        const { error } = await supabase
+          .from('rsvps')
+          .delete()
+          .eq('event_id', event.id)
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('❌ Error removing RSVP:', error);
+          Alert.alert('Error', 'Failed to remove RSVP. Please try again.');
+          return;
+        }
+
+        console.log('✅ RSVP removed successfully');
+        setIsGoing(false);
+        console.log('Removed RSVP');
+      }
+    } catch (error) {
+      console.error('💥 Unexpected error handling RSVP:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    }
   };
 
   const handleShare = () => {
