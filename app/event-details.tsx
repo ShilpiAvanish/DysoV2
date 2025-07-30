@@ -21,6 +21,7 @@ interface Event {
   join_type: string;
   tags: string[];
   created_at: string;
+  price?: number;
   host?: {
     username: string;
     full_name: string;
@@ -53,6 +54,7 @@ export default function EventDetailsScreen() {
         .from('events')
         .select(`
           *,
+          price,
           profiles:host_id (
             username,
             full_name
@@ -277,7 +279,7 @@ export default function EventDetailsScreen() {
         .insert({
           event_id: event.id,
           user_id: user.id,
-          price: 25.00, // You can make this dynamic based on event
+          price: event.price || 25.00,
           status: 'active',
           ticket_type: 'general'
         })
@@ -498,7 +500,9 @@ export default function EventDetailsScreen() {
             {isGoing ? 'Going ✓' : (event.join_type === 'tickets' ? 'Get Tickets' : 'RSVP')}
           </ThemedText>
           {event.join_type === 'tickets' && (
-            <ThemedText style={styles.priceText}>Starting at $10</ThemedText>
+            <ThemedText style={styles.priceText}>
+              ${event.price?.toFixed(2) || '25.00'}
+            </ThemedText>
           )}
         </TouchableOpacity>
       </View>
@@ -514,7 +518,7 @@ export default function EventDetailsScreen() {
           <StripeCheckout
             eventId={event?.id || ''}
             eventName={event?.title || ''}
-            amount={25} // You can make this dynamic
+            amount={event?.price || 25} 
             onSuccess={handlePaymentSuccess}
             onCancel={() => setShowPaymentModal(false)}
           />
