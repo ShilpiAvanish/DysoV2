@@ -1,46 +1,181 @@
 
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'expo-router';
+
+interface UserTicket {
+  id: string;
+  eventName: string;
+  date: string;
+  location: string;
+  ticketType: string;
+  price: string;
+  eventId: string;
+  isPastEvent: boolean;
+}
 
 export default function TicketsScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('My Tickets');
+  const [tickets, setTickets] = useState<UserTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const tabs = ['My Tickets', 'Past Events'];
 
-  const mockTickets = [
-    {
-      id: '1',
-      eventName: 'College Party',
-      date: 'Fri, Oct 27, 9 PM',
-      location: '123 Main St',
-      ticketType: 'General Admission',
-      price: 'Free',
-    },
-    {
-      id: '2',
-      eventName: 'Study Group Meetup',
-      date: 'Sat, Oct 28, 2 PM',
-      location: 'Campus Library',
-      ticketType: 'Reserved Seat',
-      price: '$5.00',
-    },
-  ];
+  useEffect(() => {
+    fetchUserTickets();
+  }, []);
 
-  const pastTickets = [
-    {
-      id: '3',
-      eventName: 'Welcome Week Party',
-      date: 'Thu, Sep 15, 8 PM',
-      location: 'Student Center',
-      ticketType: 'General Admission',
-      price: 'Free',
-    },
-  ];
+  const fetchUserTickets = async () => {
+    try {
+      setIsLoading(true);
+      console.log('🎫 Fetching user tickets...');
 
-  const currentTickets = activeTab === 'My Tickets' ? mockTickets : pastTickets;
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('❌ User not authenticated:', userError);
+        Alert.alert('Error', 'You must be logged in to view your tickets');
+        return;
+      }
+
+      console.log('✅ User authenticated:', user.id);
+
+      // Fetch user's event attendance (both RSVP and ticket purchases)
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('event_attendees')
+        .select(`
+          id,
+          event_id,
+          attendance_type,
+          status,
+          ticket_id,
+          events!inner(
+            id,
+            title,
+            date_time,
+            location,
+            address,
+            join_type
+          ),
+          tickets(
+            id,
+            name,
+            price,
+            ticket_type
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .order('events(date_time)', { ascending: true });
+
+      if (attendanceError) {
+        console.error('❌ Error fetching attendance data:', attendanceError);
+        Alert.alert('Error', 'Failed to load your tickets');
+        return;
+      }
+
+      console.log('✅ Attendance data fetched:', attendanceData);
+
+      // Transform the data into UserTicket format
+      const transformedTickets: UserTicket[] = (attendanceData || []).map((attendance) => {
+        const event = attendance.events;
+        const ticket = attendance.tickets;
+        const now = new Date();
+        const eventDate = new Date(event.date_time);
+        
+        // Format date for display
+        const formattedDate = eventDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+
+        let ticketType = 'General Admission';
+        let price = 'Free';
+
+        if (attendance.attendance_type === 'ticket' && ticket) {
+          ticketType = ticket.name || ticket.ticket_type || 'General Admission';
+          price = ticket.price && parseFloat(ticket.price) > 0 ? `$${ticket.price}` : 'Free';
+        } else if (attendance.attendance_type === 'rsvp') {
+          ticketType = 'RSVP';
+          price = 'Free';
+        }
+
+        return {
+          id: attendance.id,
+          eventName: event.title,
+          date: formattedDate,
+          location: event.address || event.location,
+          ticketType,
+          price,
+          eventId: event.id,
+          isPastEvent: eventDate < now
+        };
+      });
+
+      console.log('✅ Transformed tickets:', transformedTickets);
+      setTickets(transformedTickets);
+
+    } catch (error) {
+      console.error('💥 Unexpected error fetching tickets:', error);
+      Alert.alert('Error', 'An unexpected error occurred while loading your tickets');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTicketPress = (ticket: UserTicket) => {
+    console.log('🎫 Ticket pressed:', ticket.eventName);
+    // Navigate to event details
+    router.push(`/event-details?id=${ticket.eventId}`);
+  };
+
+  // Filter tickets based on active tab
+  const currentTickets = tickets.filter(ticket => {
+    if (activeTab === 'My Tickets') {
+      return !ticket.isPastEvent;
+    } else {
+      return ticket.isPastEvent;
+    }
+  });
+
+  const formatEventDate = (dateTime: string) => {
+    const date = new Date(dateTime);
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    return date.toLocaleDateString('en-US', options);
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ThemedView style={styles.content}>
+          <View style={styles.header}>
+            <ThemedText style={styles.headerTitle}>Tickets</ThemedText>
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#7B3EFF" />
+            <ThemedText style={styles.loadingText}>Loading your tickets...</ThemedText>
+          </View>
+        </ThemedView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,6 +192,7 @@ export default function TicketsScreen() {
               key={tab}
               style={styles.tab}
               onPress={() => setActiveTab(tab)}
+              activeOpacity={0.8}
             >
               <ThemedText
                 style={[
@@ -71,6 +207,7 @@ export default function TicketsScreen() {
           ))}
         </View>
 
+        {/* Content */}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {currentTickets.length === 0 ? (
             <View style={styles.emptyState}>
@@ -88,7 +225,12 @@ export default function TicketsScreen() {
           ) : (
             <View style={styles.ticketsContainer}>
               {currentTickets.map((ticket) => (
-                <TouchableOpacity key={ticket.id} style={styles.ticketCard}>
+                <TouchableOpacity 
+                  key={ticket.id} 
+                  style={styles.ticketCard}
+                  onPress={() => handleTicketPress(ticket)}
+                  activeOpacity={0.8}
+                >
                   <View style={styles.ticketContent}>
                     <View style={styles.ticketHeader}>
                       <ThemedText style={styles.eventName}>{ticket.eventName}</ThemedText>
@@ -140,6 +282,17 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#1C1B1F',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#7B3EFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -206,25 +359,21 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     flexDirection: 'row',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 2,
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
   ticketContent: {
     flex: 1,
-    marginRight: 16,
   },
   ticketHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 12,
   },
   eventName: {
@@ -232,11 +381,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1C1B1F',
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
   },
   ticketPrice: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#7B3EFF',
   },
   ticketDetails: {
@@ -250,15 +399,15 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     color: '#666666',
-    flex: 1,
+    fontWeight: '500',
   },
   qrCodePlaceholder: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    alignItems: 'center',
+    width: 60,
+    height: 60,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
     justifyContent: 'center',
-    alignSelf: 'center',
+    alignItems: 'center',
+    marginLeft: 16,
   },
 });
