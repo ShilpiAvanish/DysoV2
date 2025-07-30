@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { stripePromise } from '@/lib/stripe';
 
 interface StripeCheckoutProps {
@@ -62,20 +62,26 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
   };
 
   const handlePayment = async () => {
+    console.log('💳 Payment button clicked');
+    
     if (!validateCard()) {
+      console.log('❌ Card validation failed');
       return;
     }
 
     try {
       setIsLoading(true);
+      console.log('🔄 Starting payment process...');
       
       // Check if Stripe is configured
       if (!stripePromise) {
+        console.log('❌ Stripe not configured');
         Alert.alert('Configuration Error', 'Stripe is not properly configured. Please contact support.');
         setIsLoading(false);
         return;
       }
       
+      console.log('📡 Creating payment intent...');
       // Create payment intent on server
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
@@ -90,13 +96,17 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create payment intent');
+        const errorText = await response.text();
+        console.log('❌ Payment intent creation failed:', response.status, errorText);
+        throw new Error(`Failed to create payment intent: ${response.status} ${errorText}`);
       }
 
       const { clientSecret } = await response.json();
+      console.log('✅ Payment intent created, client secret received');
 
       if (!clientSecret) {
-        throw new Error('Failed to create payment intent');
+        console.log('❌ No client secret in response');
+        throw new Error('Failed to create payment intent - no client secret');
       }
 
       const stripe = await stripePromise;
@@ -156,12 +166,13 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
 
   return (
     <View style={styles.container}>
-      <View style={styles.paymentInfo}>
-        <Text style={styles.eventName}>{eventName}</Text>
-        <Text style={styles.amount}>${amount.toFixed(2)}</Text>
-      </View>
-      
-      <View style={styles.formContainer}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollContainer}>
+        <View style={styles.paymentInfo}>
+          <Text style={styles.eventName}>{eventName}</Text>
+          <Text style={styles.amount}>${amount.toFixed(2)}</Text>
+        </View>
+        
+        <View style={styles.formContainer}>
         <Text style={styles.sectionTitle}>Payment Details</Text>
         
         <View style={styles.inputGroup}>
@@ -213,7 +224,7 @@ export default function StripeCheckout({ eventId, eventName, amount, onSuccess, 
             />
           </View>
         </View>
-      </View>
+      </ScrollView>
       
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
@@ -251,7 +262,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    maxHeight: '90%',
+    maxHeight: '80%',
+    width: '90%',
+    alignSelf: 'center',
+  },
+  scrollContainer: {
+    flex: 1,
   },
   paymentInfo: {
     alignItems: 'center',
