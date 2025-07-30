@@ -32,12 +32,22 @@ interface HostedEvent {
   attendee_count: number;
 }
 
+interface PastEvent {
+  id: string;
+  title: string;
+  date_time: string;
+  location: string;
+  require_approval: boolean;
+  attendee_count: number;
+}
+
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Attending');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hostedEvents, setHostedEvents] = useState<HostedEvent[]>([]);
+  const [pastEvents, setPastEvents] = useState<PastEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
 
@@ -48,6 +58,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (activeTab === 'Hosting' && profile) {
       fetchHostedEvents();
+    } else if (activeTab === 'Hosted' && profile) {
+      fetchPastEvents();
     }
   }, [activeTab, profile]);
 
@@ -146,6 +158,69 @@ export default function ProfileScreen() {
     }
   };
 
+  const fetchPastEvents = async () => {
+    if (!profile) return;
+    
+    setIsLoadingEvents(true);
+    try {
+      console.log('🔍 Fetching past events for user:', profile.id);
+      
+      // Get events that have already passed (date_time < now)
+      const { data: eventsData, error } = await supabase
+        .from('events')
+        .select(`
+          id,
+          title,
+          date_time,
+          location,
+          require_approval,
+          event_attendees!inner(count)
+        `)
+        .eq('host_id', profile.id)
+        .lt('date_time', new Date().toISOString())
+        .order('date_time', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error fetching past events:', error);
+        Alert.alert('Error', 'Failed to load your past events');
+        return;
+      }
+
+      // Process the data to get attendee counts
+      const processedEvents = await Promise.all(
+        (eventsData || []).map(async (event) => {
+          // Get actual attendee count
+          const { count, error: countError } = await supabase
+            .from('event_attendees')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', event.id)
+            .eq('status', 'approved');
+
+          if (countError) {
+            console.error('Error getting attendee count:', countError);
+          }
+
+          return {
+            id: event.id,
+            title: event.title,
+            date_time: event.date_time,
+            location: event.location,
+            require_approval: event.require_approval,
+            attendee_count: count || 0,
+          };
+        })
+      );
+
+      console.log('✅ Past events fetched successfully:', processedEvents.length);
+      setPastEvents(processedEvents);
+    } catch (error) {
+      console.error('💥 Unexpected error fetching past events:', error);
+      Alert.alert('Error', 'An unexpected error occurred while loading your past events');
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
   
 
   const formatEventDateTime = (dateTimeString: string) => {
@@ -214,6 +289,40 @@ export default function ProfileScreen() {
     </View>
   );
 
+  const renderPastEventCard = ({ item }: { item: PastEvent }) => (
+    <View style={styles.pastEventCard}>
+      <View style={styles.hostedEventHeader}>
+        <ThemedText style={styles.hostedEventTitle}>{item.title}</ThemedText>
+        <View style={[styles.approvalBadge, styles.completedBadge]}>
+          <ThemedText style={[styles.approvalText, styles.completedText]}>
+            Completed
+          </ThemedText>
+        </View>
+      </View>
+      
+      <View style={styles.hostedEventDetails}>
+        <View style={styles.hostedEventRow}>
+          <IconSymbol size={16} name="calendar" color="#888888" />
+          <ThemedText style={styles.pastEventDateTime}>
+            {formatEventDateTime(item.date_time)}
+          </ThemedText>
+        </View>
+        
+        <View style={styles.hostedEventRow}>
+          <IconSymbol size={16} name="location" color="#888888" />
+          <ThemedText style={styles.pastEventLocation}>{item.location}</ThemedText>
+        </View>
+        
+        <View style={styles.hostedEventRow}>
+          <IconSymbol size={16} name="person.2" color="#888888" />
+          <ThemedText style={styles.pastEventAttendees}>
+            {item.attendee_count} {item.attendee_count === 1 ? 'attendee' : 'attendees'}
+          </ThemedText>
+        </View>
+      </View>
+    </View>
+  );
+
   const renderHostingContent = () => {
     if (isLoadingEvents) {
       return (
@@ -242,6 +351,41 @@ export default function ProfileScreen() {
       <FlatList
         data={hostedEvents}
         renderItem={renderHostedEventCard}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.hostedEventsList}
+      />
+    );
+  };
+
+  const renderHostedContent = () => {
+    if (isLoadingEvents) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6750A4" />
+          <ThemedText style={styles.loadingText}>Loading your past events...</ThemedText>
+        </View>
+      );
+    }
+
+    if (pastEvents.length === 0) {
+      return (
+        <View style={styles.emptyStateContainer}>
+          <View style={styles.placeholderImage}>
+            <ThemedText style={styles.placeholderImageText}>📅</ThemedText>
+          </View>
+          <ThemedText style={styles.noEventsText}>No past events</ThemedText>
+          <ThemedText style={styles.supportText}>
+            You haven't hosted any events yet. Your completed events will appear here!
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={pastEvents}
+        renderItem={renderPastEventCard}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.hostedEventsList}
@@ -330,6 +474,8 @@ export default function ProfileScreen() {
         {/* Tab Content */}
         {activeTab === 'Hosting' ? (
           renderHostingContent()
+        ) : activeTab === 'Hosted' ? (
+          renderHostedContent()
         ) : (
           /* Default Empty State for other tabs */
           <View style={styles.emptyStateContainer}>
@@ -577,6 +723,41 @@ const styles = StyleSheet.create({
   hostedEventAttendees: {
     fontSize: 14,
     color: '#666666',
+    fontWeight: '500',
+  },
+  pastEventCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    opacity: 0.8,
+  },
+  completedBadge: {
+    backgroundColor: '#E8F5E8',
+  },
+  completedText: {
+    color: '#2E7D2E',
+  },
+  pastEventDateTime: {
+    fontSize: 14,
+    color: '#888888',
+    fontWeight: '500',
+  },
+  pastEventLocation: {
+    fontSize: 14,
+    color: '#888888',
+    fontWeight: '500',
+  },
+  pastEventAttendees: {
+    fontSize: 14,
+    color: '#888888',
     fontWeight: '500',
   },
 });
