@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert, ActivityIndicator, Modal } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import StripeCheckout from '@/components/StripeCheckout';
 
 interface Event {
   id: string;
@@ -32,6 +33,7 @@ export default function EventDetailsScreen() {
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGoing, setIsGoing] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -145,26 +147,34 @@ export default function EventDetailsScreen() {
   };
 
   const handleRSVP = async () => {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to RSVP');
+      return;
+    }
+
+    if (!event) {
+      Alert.alert('Error', 'Event not found');
+      return;
+    }
+
+    // If this is a paid event, show payment modal
+    if (event.join_type === 'tickets') {
+      setShowPaymentModal(true);
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        Alert.alert('Error', 'You must be logged in to RSVP');
-        return;
-      }
-
-      if (!event) {
-        Alert.alert('Error', 'Event not found');
-        return;
-      }
-
       const newIsGoing = !isGoing;
-      
+
       if (newIsGoing) {
         // User wants to RSVP - insert/update to 'going'
         console.log('🎯 Adding RSVP for user:', user.id, 'to event:', event.id);
-        
+
         // Update rsvps table
         const { error: rsvpError } = await supabase
           .from('rsvps')
@@ -206,7 +216,7 @@ export default function EventDetailsScreen() {
       } else {
         // User wants to remove RSVP - delete from both tables
         console.log('🗑️ Removing RSVP for user:', user.id, 'from event:', event.id);
-        
+
         // Remove from rsvps table
         const { error: rsvpError } = await supabase
           .from('rsvps')
@@ -241,6 +251,58 @@ export default function EventDetailsScreen() {
     } catch (error) {
       console.error('💥 Unexpected error handling RSVP:', error);
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to purchase a ticket');
+      return;
+    }
+
+    if (!event) {
+      Alert.alert('Error', 'Event not found');
+      return;
+    }
+
+    try {
+      // Create ticket record
+      const { data: ticketData, error: ticketError } = await supabase
+        .from('tickets')
+        .insert({
+          event_id: event.id,
+          user_id: user.id,
+          price: 25.00, // You can make this dynamic based on event
+          status: 'active',
+          ticket_type: 'general'
+        })
+        .select()
+        .single();
+
+      if (ticketError) throw ticketError;
+
+      // Add to event_attendees table
+      await supabase
+        .from('event_attendees')
+        .insert({
+          user_id: user.id,
+          event_id: event.id,
+          attendance_type: 'ticket',
+          status: 'approved',
+          ticket_id: ticketData.id
+        });
+
+      setIsGoing(true);
+      setShowPaymentModal(false);
+      Alert.alert('Success', 'Ticket purchased successfully!');
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      Alert.alert('Error', 'Failed to create ticket. Please contact support.');
     }
   };
 
@@ -440,6 +502,24 @@ export default function EventDetailsScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Payment Modal */}
+      <Modal
+        visible={showPaymentModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPaymentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <StripeCheckout
+            eventId={event?.id || ''}
+            eventName={event?.title || ''}
+            amount={25} // You can make this dynamic
+            onSuccess={handlePaymentSuccess}
+            onCancel={() => setShowPaymentModal(false)}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -761,5 +841,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 4,
     opacity: 0.9,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
