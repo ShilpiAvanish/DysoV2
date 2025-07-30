@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -42,8 +41,12 @@ export default function EventDetailsScreen() {
 
   const fetchEventDetails = async () => {
     try {
+      setIsLoading(true);
       console.log('🔍 Fetching event details for ID:', id);
-      
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { data: eventData, error } = await supabase
         .from('events')
         .select(`
@@ -62,8 +65,38 @@ export default function EventDetailsScreen() {
         return;
       }
 
+      if (!eventData) {
+        console.error('❌ No event found with ID:', id);
+        Alert.alert('Error', 'Event not found');
+        return;
+      }
+
+      // Transform the data to match our interface
+      const transformedEvent: Event = {
+        ...eventData,
+        host: eventData.profiles
+      };
+
       console.log('✅ Event details fetched successfully:', eventData);
-      setEvent(eventData);
+      setEvent(transformedEvent);
+
+      // Check if user has RSVP'd if they're logged in
+      if (user) {
+        const { data: rsvpData } = await supabase
+          .from('rsvps')
+          .select('status')
+          .eq('event_id', id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (rsvpData && rsvpData.status === 'going') {
+          setIsGoing(true);
+          console.log('✅ User is already RSVP\'d to this event');
+        } else {
+          setIsGoing(false);
+          console.log('ℹ️ User has not RSVP\'d to this event');
+        }
+      }
     } catch (error) {
       console.error('💥 Unexpected error fetching event details:', error);
       Alert.alert('Error', 'An unexpected error occurred while loading event details');
@@ -160,7 +193,7 @@ export default function EventDetailsScreen() {
               <ThemedText style={styles.flyerEmoji}>🎉</ThemedText>
             </View>
           </View>
-          
+
           {/* Top Navigation Icons */}
           <View style={styles.topIcons}>
             <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
@@ -176,7 +209,7 @@ export default function EventDetailsScreen() {
             <ThemedText style={styles.eventTitle}>
               {event.title.toUpperCase()}
             </ThemedText>
-            
+
             {/* Event Type Badges */}
             <View style={styles.badgesContainer}>
               <View style={styles.badge}>
@@ -230,7 +263,7 @@ export default function EventDetailsScreen() {
           {/* Details Section */}
           <View style={styles.detailsSection}>
             <ThemedText style={styles.sectionTitle}>Details</ThemedText>
-            
+
             {/* Location Card */}
             <View style={styles.detailCard}>
               <View style={styles.detailHeader}>
