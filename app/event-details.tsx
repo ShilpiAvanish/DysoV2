@@ -21,7 +21,6 @@ interface Event {
   join_type: string;
   tags: string[];
   created_at: string;
-  price?: number;
   host?: {
     username: string;
     full_name: string;
@@ -35,6 +34,7 @@ export default function EventDetailsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGoing, setIsGoing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [ticketPrice, setTicketPrice] = useState<number>(25); // Default price
 
   useEffect(() => {
     if (id) {
@@ -54,7 +54,6 @@ export default function EventDetailsScreen() {
         .from('events')
         .select(`
           *,
-          price,
           profiles:host_id (
             username,
             full_name
@@ -83,6 +82,21 @@ export default function EventDetailsScreen() {
 
       console.log('✅ Event details fetched successfully:', eventData);
       setEvent(transformedEvent);
+
+      // If this is a ticketed event, fetch ticket information for pricing
+      if (transformedEvent.join_type === 'tickets') {
+        const { data: ticketData } = await supabase
+          .from('tickets')
+          .select('price')
+          .eq('event_id', id)
+          .limit(1)
+          .single();
+
+        if (ticketData && ticketData.price) {
+          setTicketPrice(parseFloat(ticketData.price));
+          console.log('✅ Ticket price fetched:', ticketData.price);
+        }
+      }
 
       // Check if user has RSVP'd if they're logged in
       if (user) {
@@ -279,7 +293,7 @@ export default function EventDetailsScreen() {
         .insert({
           event_id: event.id,
           user_id: user.id,
-          price: event.price || 25.00,
+          price: ticketPrice,
           status: 'active',
           ticket_type: 'general'
         })
@@ -501,7 +515,7 @@ export default function EventDetailsScreen() {
           </ThemedText>
           {event.join_type === 'tickets' && (
             <ThemedText style={styles.priceText}>
-              ${event.price?.toFixed(2) || '25.00'}
+              ${ticketPrice.toFixed(2)}
             </ThemedText>
           )}
         </TouchableOpacity>
@@ -518,7 +532,7 @@ export default function EventDetailsScreen() {
           <StripeCheckout
             eventId={event?.id || ''}
             eventName={event?.title || ''}
-            amount={event?.price || 25} 
+            amount={ticketPrice} 
             onSuccess={handlePaymentSuccess}
             onCancel={() => setShowPaymentModal(false)}
           />
