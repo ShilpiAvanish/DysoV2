@@ -32,52 +32,108 @@ export default function TicketsScreen() {
   const fetchUserTickets = async () => {
     try {
       setIsLoading(true);
-      console.log('🎫 Fetching user tickets...');
+      console.log('🎫 Starting to fetch user tickets...');
 
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
 
-      if (userError || !user) {
-        console.error('❌ User not authenticated:', userError);
+      if (!user) {
+        console.log('❌ No authenticated user found');
         Alert.alert('Error', 'You must be logged in to view your tickets');
-        setIsLoading(false);
         return;
       }
 
       console.log('✅ User authenticated:', user.id);
 
-      // Fetch user's event attendance (both RSVP and ticket purchases)
-      console.log('🔍 Fetching attendance data...');
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('event_attendees')
-        .select(`
-          id,
-          event_id,
-          attendance_type,
-          status,
-          ticket_id,
-          events:event_id (
-            id,
-            title,
-            date_time,
-            location,
-            address,
-            join_type
-          )
-        `)
-        .eq('user_id', user.id)
-        .in('status', ['approved', 'pending'])
-        .order('events(date_time)', { ascending: true });
+      // Debug: Check what's actually in the database
+      console.log('🔍 Debug: Checking all ticket purchases for user...');
+      const { data: allPurchases, error: debugError } = await supabase
+        .from('ticket_purchases')
+        .select('*')
+        .eq('user_id', user.id);
 
-      if (attendanceError) {
-        console.error('❌ Error fetching attendance data:', attendanceError);
-        console.error('❌ Attendance error details:', JSON.stringify(attendanceError, null, 2));
-        // Don't return here, continue to fetch RSVPs
+      if (debugError) {
+        console.error('❌ Debug query error:', debugError);
+      } else {
+        console.log('📊 Debug: All purchases in database:', allPurchases?.length || 0, 'records');
+        console.log('📋 Debug: Purchase details:', allPurchases);
       }
 
-      console.log('✅ Attendance data fetched:', attendanceData?.length || 0, 'records');
+      // Fetch paid tickets from ticket_purchases table
+      console.log('🔍 Fetching paid tickets from ticket_purchases...');
+      const { data: purchaseData, error: purchaseError } = await supabase
+        .from('ticket_purchases')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('purchase_date', { ascending: true });
 
-      // Also fetch direct RSVPs that might not be in event_attendees
+      if (purchaseError) {
+        console.error('❌ Error fetching ticket purchases:', purchaseError);
+        console.error('❌ Purchase error details:', JSON.stringify(purchaseError, null, 2));
+      } else {
+        console.log('✅ Paid tickets fetched:', purchaseData?.length || 0, 'records');
+        console.log('📋 Purchase details:', purchaseData);
+      }
+
+      // Fetch ticket details for each purchase
+      let enrichedPurchaseData = [];
+      if (purchaseData && purchaseData.length > 0) {
+        console.log('🔍 Fetching ticket and event details for each purchase...');
+        
+        for (const purchase of purchaseData) {
+          console.log(`🔍 Fetching details for purchase ${purchase.id} with ticket_id ${purchase.ticket_id}`);
+          
+          // Fetch ticket details
+          const { data: ticketData, error: ticketError } = await supabase
+            .from('tickets')
+            .select('*')
+            .eq('id', purchase.ticket_id)
+            .single();
+
+          if (ticketError) {
+            console.error(`❌ Error fetching ticket ${purchase.ticket_id}:`, ticketError);
+            continue;
+          }
+
+          if (!ticketData) {
+            console.error(`❌ No ticket found for ticket_id ${purchase.ticket_id}`);
+            continue;
+          }
+
+          console.log(`✅ Ticket found:`, ticketData);
+
+          // Fetch event details
+          const { data: eventData, error: eventError } = await supabase
+            .from('events')
+            .select('*')
+            .eq('id', ticketData.event_id)
+            .single();
+
+          if (eventError) {
+            console.error(`❌ Error fetching event ${ticketData.event_id}:`, eventError);
+            continue;
+          }
+
+          if (!eventData) {
+            console.error(`❌ No event found for event_id ${ticketData.event_id}`);
+            continue;
+          }
+
+          console.log(`✅ Event found:`, eventData);
+
+          // Combine the data
+          enrichedPurchaseData.push({
+            ...purchase,
+            ticket: ticketData,
+            event: eventData
+          });
+        }
+
+        console.log(`✅ Enriched purchase data:`, enrichedPurchaseData.length, 'records');
+      }
+
+      // Fetch free RSVPs from rsvps table
       console.log('🔍 Fetching RSVP data...');
       const { data: rsvpData, error: rsvpError } = await supabase
         .from('rsvps')
@@ -95,7 +151,8 @@ export default function TicketsScreen() {
           )
         `)
         .eq('user_id', user.id)
-        .eq('status', 'going');
+        .eq('status', 'going')
+        .order('events(date_time)', { ascending: true });
 
       if (rsvpError) {
         console.error('⚠️ Error fetching RSVP data:', rsvpError);
@@ -106,67 +163,73 @@ export default function TicketsScreen() {
       }
 
       // Process and combine the data
-      console.log('🔄 Combining attendance and RSVP data...');
+      console.log('🔄 Combining paid tickets and RSVPs...');
       const combinedData: any[] = [];
 
-      // Add attendance data
-      if (attendanceData) {
-        for (const attendance of attendanceData) {
-          // For ticketed events, fetch ticket data separately if needed
-          let ticketData = null;
-          if (attendance.ticket_id) {
-            const { data: ticket } = await supabase
-              .from('tickets')
-              .select('id, price, ticket_type')
-              .eq('id', attendance.ticket_id)
-              .single();
-            ticketData = ticket;
+      // Add paid tickets from ticket_purchases
+      if (enrichedPurchaseData) {
+        console.log('📋 Processing paid tickets:', enrichedPurchaseData.length, 'records');
+        for (const purchase of enrichedPurchaseData) {
+          console.log('🔍 Processing paid ticket:', {
+            id: purchase.id,
+            ticketId: purchase.ticket_id,
+            amount: purchase.total_amount,
+            quantity: purchase.quantity,
+            status: purchase.status
+          });
+
+          // Check if tickets data exists and has events
+          if (purchase.ticket && purchase.event) {
+            
+            combinedData.push({
+              id: purchase.id,
+              type: 'paid_ticket',
+              purchase: purchase,
+              ticket: purchase.ticket, // Access first ticket from array
+              event: purchase.event, // Access first event from array
+              attendance_type: 'ticket'
+            });
+            
+            console.log('✅ Added paid ticket to combined data');
+          } else {
+            console.log('⚠️ Skipping ticket purchase - missing ticket or event data:', {
+              hasTickets: !!purchase.ticket,
+              ticketsLength: purchase.ticket?.length,
+              hasEvents: !!purchase.event,
+              eventsLength: purchase.event?.length
+            });
           }
+        }
+      }
+
+      // Add free RSVPs
+      if (rsvpData) {
+        console.log('📋 Processing RSVPs:', rsvpData.length, 'records');
+        for (const rsvp of rsvpData) {
+          console.log('🔍 Processing RSVP:', {
+            id: rsvp.id,
+            eventId: rsvp.event_id,
+            status: rsvp.status
+          });
 
           combinedData.push({
-            ...attendance,
-            tickets: ticketData
+            id: rsvp.id,
+            type: 'rsvp',
+            rsvp: rsvp,
+            event: rsvp.events,
+            attendance_type: 'rsvp'
           });
         }
       }
 
-      // Add RSVP data that's not already in attendance
-      console.log('🔄 Processing', rsvpData?.length || 0, 'RSVP records...');
-      if (rsvpData) {
-        for (const rsvp of rsvpData) {
-          const existsInAttendance = attendanceData?.find(
-            (attendance) => attendance.event_id === rsvp.event_id
-          );
-
-          console.log('🔍 RSVP event', rsvp.event_id, 'exists in attendance:', existsInAttendance?.id || null);
-
-          if (!existsInAttendance) {
-            // Transform RSVP to match attendance structure
-            const transformedRSVP = {
-              id: rsvp.id,
-              event_id: rsvp.event_id,
-              attendance_type: 'rsvp',
-              status: 'approved',
-              ticket_id: null,
-              events: rsvp.events,
-              tickets: null
-            };
-
-            combinedData.push(transformedRSVP);
-            console.log('✅ Added RSVP to combined data:', transformedRSVP);
-          }
-        }
-      }
-
-      console.log('✅ Combined attendance data:', combinedData.length, 'total records');
+      console.log('✅ Combined data:', combinedData.length, 'total records');
       console.log('📋 Combined data details:', combinedData);
 
       // Transform the data into UserTicket format
       console.log('🔄 Transforming', combinedData.length, 'records into UserTicket format...');
-      const transformedTickets: UserTicket[] = combinedData.map((attendance, index) => {
-        console.log(`🔄 Transforming record ${index + 1}:`, attendance);
-        const event = attendance.events;
-        const ticket = attendance.tickets;
+      const transformedTickets: UserTicket[] = combinedData.map((item, index) => {
+        console.log(`🔄 Transforming record ${index + 1}:`, item);
+        const event = item.event;
         const now = new Date();
         const eventDate = new Date(event.date_time);
 
@@ -183,16 +246,34 @@ export default function TicketsScreen() {
         let ticketType = 'General Admission';
         let price = 'Free';
 
-        if (attendance.attendance_type === 'ticket' && ticket) {
+        if (item.type === 'paid_ticket') {
+          const purchase = item.purchase;
+          const ticket = item.ticket;
+          
           ticketType = ticket.name || ticket.ticket_type || 'General Admission';
-          price = ticket.price && parseFloat(ticket.price) > 0 ? `$${ticket.price}` : 'Free';
-        } else if (attendance.attendance_type === 'rsvp') {
+          
+          console.log('🔍 Determining price for paid ticket:', {
+            ticketId: ticket.id,
+            ticketPrice: ticket.price,
+            purchaseAmount: purchase.total_amount
+          });
+          
+          // Use the actual amount paid from purchase data
+          if (purchase.total_amount && parseFloat(purchase.total_amount) > 0) {
+            price = `$${parseFloat(purchase.total_amount).toFixed(2)}`;
+            console.log('✅ Using purchase amount:', price);
+          } else {
+            price = 'Free';
+            console.log('✅ Using free price (zero purchase amount)');
+          }
+        } else if (item.type === 'rsvp') {
           ticketType = 'RSVP';
           price = 'Free';
+          console.log('✅ RSVP ticket - showing free');
         }
 
         const transformedTicket = {
-          id: attendance.id,
+          id: item.id,
           eventName: event.title,
           date: formattedDate,
           location: event.address || event.location,

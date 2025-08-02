@@ -35,6 +35,8 @@ export default function EventDetailsScreen() {
   const [isGoing, setIsGoing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [ticketPrice, setTicketPrice] = useState<number>(25); // Default price
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -49,6 +51,7 @@ export default function EventDetailsScreen() {
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
 
       const { data: eventData, error } = await supabase
         .from('events')
@@ -87,14 +90,15 @@ export default function EventDetailsScreen() {
       if (transformedEvent.join_type === 'tickets') {
         const { data: ticketData } = await supabase
           .from('tickets')
-          .select('price')
+          .select('*')
           .eq('event_id', id)
           .limit(1)
           .single();
 
-        if (ticketData && ticketData.price) {
+        if (ticketData) {
           setTicketPrice(parseFloat(ticketData.price));
-          console.log('✅ Ticket price fetched:', ticketData.price);
+          setSelectedTicket(ticketData);
+          console.log('✅ Ticket data fetched:', ticketData);
         }
       }
 
@@ -178,6 +182,16 @@ export default function EventDetailsScreen() {
 
     // If this is a paid event, show payment modal
     if (event.join_type === 'tickets') {
+      if (!currentUser) {
+        Alert.alert('Error', 'You must be logged in to purchase tickets');
+        return;
+      }
+      
+      if (!selectedTicket) {
+        Alert.alert('Error', 'Ticket details not found for this event');
+        return;
+      }
+      
       setShowPaymentModal(true);
       return;
     }
@@ -287,38 +301,33 @@ export default function EventDetailsScreen() {
     }
 
     try {
-      // Create ticket record
-      const { data: ticketData, error: ticketError } = await supabase
-        .from('tickets')
-        .insert({
-          event_id: event.id,
-          user_id: user.id,
-          price: ticketPrice,
-          status: 'active',
-          ticket_type: 'general'
-        })
-        .select()
-        .single();
-
-      if (ticketError) throw ticketError;
-
+      // The server has already created the ticket purchase record
+      // We just need to update the UI and add to event_attendees
+      
       // Add to event_attendees table
-      await supabase
+      const { error: attendeeError } = await supabase
         .from('event_attendees')
-        .insert({
+        .upsert({
           user_id: user.id,
           event_id: event.id,
           attendance_type: 'ticket',
-          status: 'approved',
-          ticket_id: ticketData.id
+          status: 'approved'
+        }, {
+          onConflict: 'event_id,user_id'
         });
+
+      if (attendeeError) {
+        console.error('❌ Error adding to event_attendees:', attendeeError);
+        Alert.alert('Error', 'Failed to update attendance record. Please contact support.');
+        return;
+      }
 
       setIsGoing(true);
       setShowPaymentModal(false);
-      Alert.alert('Success', 'Ticket purchased successfully!');
+      Alert.alert('Success', 'Ticket purchased successfully! Check your tickets tab for details.');
     } catch (error) {
-      console.error('Error creating ticket:', error);
-      Alert.alert('Error', 'Failed to create ticket. Please contact support.');
+      console.error('Error updating attendance:', error);
+      Alert.alert('Error', 'Failed to update attendance. Please contact support.');
     }
   };
 
@@ -535,6 +544,9 @@ export default function EventDetailsScreen() {
             amount={ticketPrice} 
             onSuccess={handlePaymentSuccess}
             onCancel={() => setShowPaymentModal(false)}
+            ticketId={selectedTicket?.id || ''}
+            userId={currentUser?.id || ''}
+            quantity={1}
           />
         </View>
       </Modal>

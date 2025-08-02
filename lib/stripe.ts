@@ -1,12 +1,27 @@
 
-import { loadStripe } from '@stripe/stripe-js';
+import { initStripe } from '@stripe/stripe-react-native';
 
-// This is your publishable key (safe to expose in client-side code)
-const publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+// Initialize Stripe with your publishable key
+export const initializeStripe = async () => {
+  const publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  
+  if (!publishableKey) {
+    console.warn('⚠️ EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set. Stripe payments will not work.');
+    return false;
+  }
 
-export { stripePromise };
+  try {
+    await initStripe({
+      publishableKey,
+      merchantIdentifier: 'merchant.com.yourcompany.yourapp', // Optional: for Apple Pay
+    });
+    console.log('✅ Stripe initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to initialize Stripe:', error);
+    return false;
+  }
+};
 
-// Server-side Stripe instance (for API routes)
-const secretKey = process.env.STRIPE_SECRET_KEY;
-export const stripe = secretKey ? require('stripe')(secretKey) : null;
+// Note: Server-side Stripe instance should only be used in server.js, not in React Native app
+// The server-side code is in server.js file

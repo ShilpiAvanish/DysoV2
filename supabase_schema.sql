@@ -44,6 +44,7 @@ CREATE TABLE public.tickets (
     description TEXT,
     price DECIMAL(10,2) DEFAULT 0.00,
     capacity INTEGER,
+    sold_count INTEGER DEFAULT 0, -- Track how many tickets have been sold
     ticket_type TEXT DEFAULT 'custom' CHECK (ticket_type IN ('custom', 'presale', 'door')),
     start_sale_date TIMESTAMP WITH TIME ZONE,
     end_sale_date TIMESTAMP WITH TIME ZONE,
@@ -71,6 +72,7 @@ CREATE TABLE public.ticket_purchases (
     purchase_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     qr_code TEXT, -- For ticket validation
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'used', 'cancelled')),
+    stripe_payment_intent_id TEXT, -- For tracking Stripe payments
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
