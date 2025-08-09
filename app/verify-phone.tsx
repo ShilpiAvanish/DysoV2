@@ -82,7 +82,59 @@ export default function VerifyPhoneScreen() {
       if (session) {
         // Verification successful
         console.log('Verification successful', session);
-        router.push('/permissions');
+        
+        // Check if a profile already exists for this phone number
+        try {
+          console.log('🔍 Checking for existing profile with phone number:', phoneNumber);
+          
+          // Try to find profile with the exact phone number first
+          let { data: existingProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('phone_number', phoneNumber)
+            .single();
+
+          // If not found, try without the + prefix (in case it's stored without +)
+          if (profileError && profileError.code === 'PGRST116') {
+            const phoneWithoutPlus = phoneNumber.startsWith('+') ? phoneNumber.substring(1) : phoneNumber;
+            console.log('🔍 Trying without + prefix:', phoneWithoutPlus);
+            
+            const { data: profileWithoutPlus, error: errorWithoutPlus } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('phone_number', phoneWithoutPlus)
+              .single();
+              
+            if (!errorWithoutPlus && profileWithoutPlus) {
+              existingProfile = profileWithoutPlus;
+              profileError = null;
+            }
+          }
+
+          if (profileError) {
+            if (profileError.code === 'PGRST116') {
+              // PGRST116 is "not found" error, which is expected if no profile exists
+              console.log('❌ No existing profile found for phone number:', phoneNumber);
+            } else {
+              console.error('❌ Error checking existing profile:', profileError);
+            }
+          }
+
+          if (existingProfile) {
+            console.log('✅ Existing profile found for phone number:', phoneNumber);
+            console.log('📋 Profile details:', { id: existingProfile.id, username: existingProfile.username });
+            // Profile already exists, go directly to main app
+            router.replace('/(tabs)');
+          } else {
+            console.log('🆕 No existing profile found, continuing to setup flow');
+            // No profile exists, continue to permissions setup
+            router.push('/permissions');
+          }
+        } catch (error) {
+          console.error('💥 Unexpected error checking existing profile:', error);
+          // On error, default to permissions setup
+          router.push('/permissions');
+        }
       }
       
     } catch (error) {

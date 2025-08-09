@@ -48,6 +48,7 @@ export default function Index() {
       if (profileError || !profile) {
         console.log('❌ Profile not found or error:', profileError);
         // Profile doesn't exist, go to setup profile
+        console.log('🚀 Navigating to setup-profile for new user');
         router.replace('/setup-profile');
         return;
       }

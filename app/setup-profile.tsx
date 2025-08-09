@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { supabase } from '@/lib/supabase';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function SetupProfileScreen() {
   const router = useRouter();
@@ -14,20 +15,164 @@ export default function SetupProfileScreen() {
   const [birthday, setBirthday] = useState('');
   const [campus, setCampus] = useState('UT Austin'); // Set default campus to UT Austin
   const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const handleUpload = () => {
-    // Handle photo upload
-    console.log('Upload photo');
+  const requestMediaLibraryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission Required',
+        'Sorry, we need camera roll permissions to upload your profile photo.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
+    return true;
   };
 
-  const handleTakePhoto = () => {
-    // Handle take photo
-    console.log('Take photo');
+  const handleUpload = async () => {
+    const hasPermission = await requestMediaLibraryPermission();
+    if (!hasPermission) return;
+
+    setIsUploadingImage(true);
+    
+    // Add a timeout to prevent stuck loading state
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Timeout reached, resetting loading state');
+      setIsUploadingImage(false);
+    }, 30000); // 30 second timeout
+    
+    try {
+      console.log('📱 Opening image picker...');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      console.log('📱 Image picker result:', result);
+      console.log('📱 Result canceled:', result.canceled);
+      console.log('📱 Result assets:', result.assets);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+        console.log('✅ Selected image:', selectedImage.uri);
+        setProfileImage(selectedImage.uri);
+      } else {
+        console.log('❌ No image selected or picker was canceled');
+      }
+    } catch (error) {
+      console.error('❌ Error picking image:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
+    } finally {
+      console.log('🏁 Setting isUploadingImage to false');
+      clearTimeout(timeoutId);
+      setIsUploadingImage(false);
+    }
   };
 
-  const testButtonPress = () => {
-    console.log('🔘 Button pressed!');
-    Alert.alert('Test', 'Button is working!');
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission Required',
+        'Sorry, we need camera permissions to take a photo.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setIsUploadingImage(true);
+    
+    // Add a timeout to prevent stuck loading state
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Timeout reached, resetting loading state');
+      setIsUploadingImage(false);
+    }, 30000); // 30 second timeout
+    
+    try {
+      console.log('📸 Opening camera...');
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      console.log('📸 Camera result:', result);
+      console.log('📸 Result canceled:', result.canceled);
+      console.log('📸 Result assets:', result.assets);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const capturedImage = result.assets[0];
+        console.log('✅ Captured image:', capturedImage.uri);
+        setProfileImage(capturedImage.uri);
+      } else {
+        console.log('❌ No photo captured or camera was canceled');
+      }
+    } catch (error) {
+      console.error('❌ Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
+    } finally {
+      console.log('🏁 Setting isUploadingImage to false');
+      clearTimeout(timeoutId);
+      setIsUploadingImage(false);
+    }
+  };
+
+  const testButtonPress = async () => {
+    console.log('🧪 Test button pressed!');
+    
+    // Test authentication first
+    try {
+      console.log('🧪 Testing authentication...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log('🧪 Auth status:', { user: !!user, error: authError });
+      
+      if (authError) {
+        console.error('🧪 Auth error:', authError);
+        Alert.alert('Auth Test', 'Authentication error: ' + authError.message);
+        return;
+      }
+      
+      if (!user) {
+        console.log('🧪 No authenticated user');
+        Alert.alert('Auth Test', 'No authenticated user found');
+        return;
+      }
+      
+      console.log('🧪 User authenticated:', user.id);
+      
+      // Test direct access to avatars bucket (skip listBuckets)
+      console.log('🧪 Testing direct avatars bucket access...');
+      const { data: files, error: filesError } = await supabase.storage
+        .from('avatars')
+        .list();
+      
+      console.log('🧪 Avatars bucket files:', files);
+      console.log('🧪 Files error:', filesError);
+      
+      if (filesError) {
+        console.error('🧪 Avatars bucket access error:', filesError);
+        
+        if (filesError.message.includes('bucket') || filesError.message.includes('not found')) {
+          Alert.alert(
+            'Storage Setup Required', 
+            'The "avatars" storage bucket does not exist or is not accessible. Please check your Supabase storage setup.'
+          );
+        } else {
+          Alert.alert('Storage Test', 'Error accessing avatars bucket: ' + filesError.message);
+        }
+        return;
+      }
+      
+      console.log('🧪 Avatars bucket accessible!');
+      Alert.alert('Storage Test', `✅ Avatars bucket is accessible! Files: ${files?.length || 0}`);
+    } catch (error) {
+      console.error('🧪 Storage test error:', error);
+      Alert.alert('Storage Test Error', error instanceof Error ? error.message : 'Unknown error');
+    }
   };
 
   const handleComplete = async () => {
@@ -92,6 +237,131 @@ export default function SetupProfileScreen() {
       const [month, day, year] = birthday.split('/');
       const formattedBirthday = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
+      // Get the current session to ensure we have the most up-to-date user info
+      const { data: { session } } = await supabase.auth.getSession();
+      const verifiedPhoneNumber = session?.user?.phone || user.phone || null;
+      
+      console.log('📱 Phone number from session:', session?.user?.phone);
+      console.log('📱 Phone number from user object:', user.phone);
+      console.log('📱 Final verified phone number:', verifiedPhoneNumber);
+      
+      // Store phone number without + prefix to match existing database format
+      const phoneNumberForStorage = verifiedPhoneNumber?.startsWith('+') 
+        ? verifiedPhoneNumber.substring(1) 
+        : verifiedPhoneNumber;
+      
+      console.log('📱 Phone number for storage (without +):', phoneNumberForStorage);
+
+      // Upload profile image if selected
+      let avatarUrl = null;
+      if (profileImage) {
+        try {
+          console.log('📤 Uploading profile image...');
+          console.log('📤 Image URI:', profileImage);
+          
+          // Convert image to blob
+          console.log('📤 Converting image to blob...');
+          const response = await fetch(profileImage);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          const blob = await response.blob();
+          console.log('📤 Blob created, size:', blob.size);
+          
+          // Generate unique filename with proper extension
+          let fileExt = 'jpg'; // default extension
+          if (profileImage.includes('.')) {
+            const ext = profileImage.split('.').pop()?.toLowerCase();
+            if (ext && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+              fileExt = ext;
+            }
+          }
+          const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+          console.log('📤 Generated filename:', fileName);
+          
+          // Try to upload to Supabase storage with proper error handling
+          console.log('📤 Attempting to upload to Supabase storage...');
+          let { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, blob, {
+              cacheControl: '3600',
+              upsert: true,
+              contentType: `image/${fileExt}`
+            });
+            
+          if (uploadError) {
+            console.error('❌ Error uploading image:', uploadError);
+            console.error('❌ Error details:', uploadError.message);
+            
+            // Try alternative approach - convert to base64
+            console.log('🔄 Trying alternative upload method...');
+            
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+            });
+            reader.readAsDataURL(blob);
+            const base64Data = await base64Promise;
+            
+            // Remove data URL prefix to get just the base64 data
+            const base64String = base64Data.split(',')[1];
+            
+            // Upload as text file
+            const { data: altUploadData, error: altUploadError } = await supabase.storage
+              .from('avatars')
+              .upload(fileName, base64String, {
+                cacheControl: '3600',
+                upsert: true,
+                contentType: `image/${fileExt}`
+              });
+              
+            if (altUploadError) {
+              console.error('❌ Alternative upload also failed:', altUploadError);
+              throw new Error('All upload methods failed');
+            }
+            
+            console.log('✅ Alternative upload successful!');
+            uploadData = altUploadData;
+          } else {
+            console.log('✅ Direct upload successful!');
+          }
+          
+          // Verify upload was successful
+          console.log('🔍 Verifying upload...');
+          const { data: fileInfo, error: fileError } = await supabase.storage
+            .from('avatars')
+            .list('', {
+              search: fileName
+            });
+            
+          if (fileError || !fileInfo || fileInfo.length === 0) {
+            console.error('❌ Could not verify uploaded file');
+            throw new Error('Upload verification failed');
+          }
+          
+          const uploadedFile = fileInfo[0];
+          console.log('📊 Uploaded file info:', uploadedFile);
+          
+          if (uploadedFile.metadata?.size === 0) {
+            console.error('❌ Uploaded file is empty (0 bytes)');
+            throw new Error('Uploaded file is empty');
+          }
+          
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+            
+          avatarUrl = urlData.publicUrl;
+          console.log('✅ Profile image uploaded successfully:', avatarUrl);
+        } catch (error) {
+          console.error('❌ Error processing image upload:', error);
+          console.log('⚠️ Continuing with local image due to error');
+          avatarUrl = profileImage;
+        }
+      }
+
       // Prepare profile data
       const profileData = {
         id: user.id,
@@ -101,7 +371,8 @@ export default function SetupProfileScreen() {
         birthday: formattedBirthday,
         gender: selectedGender.toLowerCase() || null,
         university: campus.trim(),
-        phone_number: user.phone || null,
+        phone_number: phoneNumberForStorage,
+        avatar_url: avatarUrl,
       };
 
       console.log('💾 Saving profile data:', profileData);
@@ -173,15 +444,41 @@ export default function SetupProfileScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Modern Profile Image Section */}
           <View style={styles.profileImageSection}>
-            <TouchableOpacity style={styles.avatarContainer} onPress={handleUpload}>
-              <View style={styles.avatarPlaceholder}>
-                <IconSymbol size={32} name="person.fill" color="#CCCCCC" />
-              </View>
+            <TouchableOpacity 
+              style={styles.avatarContainer} 
+              onPress={handleUpload}
+              onLongPress={handleTakePhoto}
+              disabled={isUploadingImage}
+            >
+              {profileImage ? (
+                <View style={styles.avatarImageContainer}>
+                  <Image 
+                    source={{ uri: profileImage }} 
+                    style={styles.avatarImage}
+                    resizeMode="cover"
+                  />
+                  {isUploadingImage && (
+                    <View style={styles.avatarLoadingOverlay}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  {isUploadingImage ? (
+                    <ActivityIndicator size="large" color="#CCCCCC" />
+                  ) : (
+                    <IconSymbol size={32} name="person.fill" color="#CCCCCC" />
+                  )}
+                </View>
+              )}
               <View style={styles.avatarOverlay}>
                 <IconSymbol size={20} name="camera" color="#FFFFFF" />
               </View>
             </TouchableOpacity>
-            <Text style={styles.uploadText}>Upload Photo</Text>
+            <Text style={styles.uploadText}>
+              {isUploadingImage ? 'Processing...' : 'Tap to upload • Long press for camera'}
+            </Text>
           </View>
 
           {/* Input Fields */}
@@ -377,6 +674,34 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  avatarImageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatarOverlay: {
     position: 'absolute',
     bottom: 0,
@@ -523,5 +848,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  testButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
